@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏆 2026世界杯 AI预言家对决</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ========== 基础与变量 ========== */
+:root {
+  --claude: #F97316;
+  --gpt: #10B981;
+  --gemini: #8B5CF6;
+  --deepseek: #3B82F6;
+  --doubao: #F59E0B;
+}
+/* 默认：亮色主题 */
+body {
+  --bg-deep: #f8f9fb;
+  --bg-mid: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.92);
+  --gold: #c89000;
+  --gold-light: #e6a800;
+  --green: #10b981;
+  --red: #ef4444;
+  --text: #1a1a2e;
+  --text-dim: #6b7280;
+  --text-muted: #9ca3af;
+  --border: rgba(0,0,0,0.08);
+  --border-light: rgba(0,0,0,0.04);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.1);
+  --header-gradient: linear-gradient(135deg, #c89000 0%, #1a1a2e 40%, #c89000 100%);
+  --score-gradient: linear-gradient(180deg, #1a1a2e, #c89000);
+  --countdown-gradient: linear-gradient(180deg, #e6a800 0%, #c89000 100%);
+  --tab-active-bg: linear-gradient(135deg, #faf9f6, #f5f2eb);
+  --consensus-bg: #faf9f6;
+  --card-hover-shadow: var(--shadow-lg);
+  --btn-gradient: linear-gradient(135deg, #f59e0b, #d97706);
+  --btn-text: #fff;
+  --main-score-bg: rgba(0,0,0,0.03);
+  --main-score-border: rgba(0,0,0,0.08);
+  --conf-bar-bg: rgba(0,0,0,0.06);
+  --alt-score-bg: rgba(0,0,0,0.03);
+  --alt-score-border: rgba(0,0,0,0.06);
+  --rank-bar-bg: rgba(0,0,0,0.06);
+  --group-summary-bg: rgba(0,0,0,0.02);
+  --group-hover-bg: rgba(200,144,0,0.06);
+  --group-tr-border: rgba(0,0,0,0.04);
+  --spinner-border: rgba(0,0,0,0.08);
+  --chart-tick: #6b7280;
+  --chart-grid: rgba(0,0,0,0.06);
+  --chart-label: #1a1a2e;
+  --chart-legend: #1a1a2e;
+  --particle-color: rgba(200,144,0,0.3);
+  --toast-success-bg: rgba(16,185,129,0.1);
+  --toast-error-bg: rgba(239,68,68,0.1);
+  --toast-success-text: #059669;
+  --toast-error-text: #dc2626;
+}
+/* 暗黑主题 */
+body.dark {
+  --bg-deep: #0a0a2e;
+  --bg-mid: #12123a;
+  --bg-card: rgba(18, 18, 58, 0.85);
+  --gold: #ffd700;
+  --gold-light: #ffe44d;
+  --green: #00ff88;
+  --red: #ff4757;
+  --text: #e0e0e0;
+  --text-dim: #8899aa;
+  --text-muted: #667788;
+  --border: rgba(255,255,255,0.08);
+  --border-light: rgba(255,255,255,0.04);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.2);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
+  --header-gradient: linear-gradient(135deg, #ffd700 0%, #fff 50%, #ffd700 100%);
+  --score-gradient: linear-gradient(180deg, #fff, #ffd700);
+  --countdown-gradient: linear-gradient(180deg, #ffe44d 0%, #ffd700 100%);
+  --tab-active-bg: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,215,0,0.05));
+  --consensus-bg: var(--bg-card);
+  --card-hover-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  --btn-gradient: linear-gradient(135deg, #ffd700, #e6a800);
+  --btn-text: #000;
+  --main-score-bg: rgba(255,255,255,0.05);
+  --main-score-border: rgba(255,255,255,0.1);
+  --conf-bar-bg: rgba(255,255,255,0.08);
+  --alt-score-bg: rgba(255,255,255,0.05);
+  --alt-score-border: rgba(255,255,255,0.08);
+  --rank-bar-bg: rgba(255,255,255,0.08);
+  --group-summary-bg: rgba(255,255,255,0.03);
+  --group-hover-bg: rgba(255,215,0,0.05);
+  --group-tr-border: rgba(255,255,255,0.03);
+  --spinner-border: rgba(255,255,255,0.08);
+  --chart-tick: #8899aa;
+  --chart-grid: rgba(255,255,255,0.08);
+  --chart-label: #e0e0e0;
+  --chart-legend: #e0e0e0;
+  --particle-color: rgba(255,215,0,0.5);
+  --toast-success-bg: rgba(0,255,136,0.15);
+  --toast-error-bg: rgba(255,71,87,0.15);
+  --toast-success-text: #00ff88;
+  --toast-error-text: #ff4757;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-deep);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ========== 粒子背景 ========== */
+#particles {
+  position: fixed; top:0; left:0; width:100%; height:100%;
+  pointer-events: none; z-index: 0;
+}
+
+/* ========== 头部 ========== */
+header {
+  position: relative; z-index: 1;
+  text-align: center; padding: 30px 20px 20px;
+}
+header h1 {
+  font-size: clamp(1.6rem, 4vw, 2.8rem);
+  background: var(--header-gradient);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 900; letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+header .subtitle { color: var(--text-dim); font-size: 0.95rem; letter-spacing: 1px; }
+
+/* 主题切换按钮 */
+.theme-toggle {
+  position: fixed; top: 16px; right: 16px; z-index: 100;
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 2px solid var(--border); background: var(--bg-card);
+  cursor: pointer; font-size: 1.3rem; display: flex; align-items: center; justify-content: center;
+  transition: all 0.3s; backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-sm);
+}
+.theme-toggle:hover { transform: scale(1.1); border-color: var(--gold); }
+
+.countdown-bar {
+  display: flex; justify-content: center; gap: 16px;
+  margin: 16px auto; flex-wrap: wrap;
+}
+.countdown-item {
+  background: var(--bg-card); backdrop-filter: blur(10px);
+  border: 1px solid var(--border); border-radius: 16px;
+  padding: 12px 20px; text-align: center; min-width: 70px;
+  box-shadow: var(--shadow-sm);
+}
+.countdown-num {
+  font-size: 2rem; font-weight: 900;
+  background: var(--countdown-gradient);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.countdown-label { font-size: 0.75rem; color: var(--text-dim); margin-top: 2px; }
+
+/* ========== 冠军预测栏 ========== */
+.champion-strip {
+  position: relative; z-index: 1;
+  display: flex; justify-content: center; gap: 12px;
+  flex-wrap: wrap; padding: 8px 20px; margin: 0 auto 10px;
+  max-width: 1100px;
+}
+.champion-card {
+  background: var(--bg-card); backdrop-filter: blur(12px);
+  border: 1px solid var(--border); border-radius: 16px;
+  padding: 14px 16px; text-align: center; min-width: 140px;
+  transition: all 0.3s; cursor: default;
+  box-shadow: var(--shadow-sm);
+}
+.champion-card:hover { transform: translateY(-3px); border-color: var(--gold); box-shadow: var(--card-hover-shadow); }
+.champion-card .ai-dot { display: inline-block; width: 10px; height:10px; border-radius:50%; margin-right: 4px; }
+.champion-card .ai-name { font-weight: 700; font-size: 0.9rem; }
+.champion-card .champion-name { font-size: 1.4rem; font-weight: 900; margin: 4px 0; }
+.champion-card .champion-conf { font-size: 0.8rem; color: var(--text-dim); }
+
+/* ========== Tab 导航 ========== */
+.tab-nav {
+  position: relative; z-index: 1;
+  display: flex; justify-content: center; gap: 4px;
+  margin: 20px auto; max-width: 600px;
+}
+.tab-btn {
+  flex: 1; padding: 12px 20px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  color: var(--text-dim); font-size: 0.95rem; font-weight: 600;
+  cursor: pointer; transition: all 0.3s;
+  backdrop-filter: blur(8px); box-shadow: var(--shadow-sm);
+}
+.tab-btn:first-child { border-radius: 12px 0 0 12px; }
+.tab-btn:last-child { border-radius: 0 12px 12px 0; }
+.tab-btn.active {
+  background: var(--tab-active-bg);
+  color: var(--gold); border-color: var(--gold);
+  box-shadow: 0 0 20px rgba(200,144,0,0.12);
+}
+
+/* ========== 内容容器 ========== */
+.container { position:relative; z-index:1; max-width:1200px; margin:0 auto; padding:0 16px 40px; }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* ========== Tab1 - 赛事看板 ========== */
+.section-title {
+  font-size: 1.3rem; font-weight: 700; margin: 24px 0 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.match-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+
+.match-card {
+  background: var(--bg-card); backdrop-filter: blur(12px);
+  border: 1px solid var(--border); border-radius: 16px;
+  padding: 20px; transition: all 0.3s; cursor: pointer;
+  position: relative; overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.match-card:hover { border-color: var(--gold); transform: translateY(-2px); box-shadow: var(--card-hover-shadow); }
+.match-card::before {
+  content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+  border-radius: 4px 0 0 4px;
+}
+.match-card.status-upcoming::before { background: var(--gold); }
+.match-card.status-completed::before { background: var(--green); }
+
+.match-card .match-stage { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+.match-card .match-teams {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 10px 0; gap: 12px;
+}
+.match-card .team { text-align: center; flex: 1; }
+.match-card .team .flag { font-size: 2.2rem; }
+.match-card .team .name { font-weight: 700; font-size: 1rem; margin-top: 2px; }
+.match-card .vs { font-size: 0.9rem; color: var(--text-dim); font-weight: 600; }
+.match-card .match-score {
+  font-size: 2rem; font-weight: 900; text-align: center;
+  background: var(--score-gradient);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.match-card .match-info {
+  display: flex; gap: 12px; margin-top: 10px; font-size: 0.8rem; color: var(--text-dim);
+  flex-wrap: wrap;
+}
+.match-card .match-info span { display: flex; align-items: center; gap: 4px; }
+
+.match-card .predict-btn {
+  display: block; margin: 12px auto 0; padding: 8px 24px;
+  background: var(--btn-gradient);
+  color: var(--btn-text); border: none; border-radius: 20px;
+  font-weight: 700; font-size: 0.9rem; cursor: pointer;
+  transition: all 0.3s;
+}
+.match-card .predict-btn:hover { transform: scale(1.05); box-shadow: 0 4px 16px rgba(245,158,11,0.35); }
+.match-card .predict-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.match-card .predict-btn.predicted { background: var(--green); }
+
+/* 小组积分榜 */
+.group-tables { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-top: 16px; }
+.group-table {
+  background: var(--bg-card); backdrop-filter: blur(10px);
+  border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.group-table summary {
+  padding: 12px 16px; font-weight: 700; cursor: pointer;
+  background: var(--group-summary-bg); list-style: none;
+}
+.group-table summary::-webkit-details-marker { display: none; }
+.group-table table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.group-table th { color: var(--text-dim); font-weight: 500; padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: center; }
+.group-table td { padding: 6px 8px; text-align: center; border-bottom: 1px solid var(--group-tr-border); }
+.group-table tr:hover td { background: var(--group-hover-bg); }
+.group-table .team-col { text-align: left; font-weight: 600; }
+
+/* ========== Tab2 - AI预测对决 ========== */
+.prediction-header {
+  text-align: center; margin: 10px 0 20px;
+}
+.prediction-header .match-title { font-size: 1.6rem; font-weight: 900; }
+.prediction-header .match-meta { color: var(--text-dim); margin-top: 4px; }
+.prediction-header .match-meta span { margin: 0 8px; }
+
+.match-selector {
+  display: flex; justify-content: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
+}
+.match-selector select {
+  padding: 10px 16px; border-radius: 10px;
+  background: var(--bg-card); color: var(--text);
+  border: 1px solid var(--border); font-size: 0.95rem;
+  backdrop-filter: blur(8px); cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+.match-selector button {
+  padding: 10px 24px; border-radius: 10px;
+  background: var(--btn-gradient);
+  color: var(--btn-text); border: none; font-weight: 700; cursor: pointer;
+  transition: all 0.3s;
+}
+.match-selector button:hover { transform: scale(1.05); box-shadow: 0 4px 16px rgba(245,158,11,0.35); }
+.match-selector button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.prediction-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
+
+.pred-card {
+  background: var(--bg-card); backdrop-filter: blur(12px);
+  border: 1px solid var(--border); border-radius: 16px;
+  padding: 18px; text-align: center;
+  transition: all 0.4s; position: relative;
+  box-shadow: var(--shadow-sm);
+}
+.pred-card:hover { transform: translateY(-4px); box-shadow: var(--card-hover-shadow); }
+.pred-card .ai-badge {
+  display: inline-block; padding: 3px 12px; border-radius: 12px;
+  font-size: 0.8rem; font-weight: 700; color: #fff; margin-bottom: 8px;
+}
+.pred-card .main-score {
+  font-size: 2.2rem; font-weight: 900; margin: 8px 0;
+  padding: 8px 16px; border-radius: 12px;
+  display: inline-block;
+  background: var(--main-score-bg);
+  border: 2px solid var(--main-score-border);
+}
+.pred-card .winner-label {
+  font-weight: 700; font-size: 0.95rem; margin: 4px 0;
+}
+.pred-card .conf-bar {
+  height: 6px; border-radius: 3px; margin: 8px auto; max-width: 160px;
+  background: var(--conf-bar-bg); overflow: hidden;
+}
+.pred-card .conf-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+.pred-card .alt-scores { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+.pred-card .alt-score {
+  font-size: 0.75rem; padding: 3px 10px; border-radius: 10px;
+  background: var(--alt-score-bg); border: 1px solid var(--alt-score-border);
+  color: var(--text-dim);
+}
+
+/* AI共识 */
+.consensus-panel {
+  background: var(--consensus-bg);
+  backdrop-filter: blur(12px);
+  border: 2px solid var(--gold); border-radius: 16px;
+  padding: 16px 20px; text-align: center; margin-top: 10px;
+  box-shadow: var(--shadow-md);
+}
+.consensus-panel .consensus-title { font-size: 0.9rem; color: var(--gold); font-weight: 700; }
+.consensus-panel .consensus-score { font-size: 1.4rem; font-weight: 900; margin: 4px 0; }
+.consensus-panel .consensus-ais { color: var(--text-dim); font-size: 0.8rem; }
+
+/* 维度分析 */
+.dimensions-panel { margin-top: 16px; }
+.dimensions-panel .dim-title { font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
+.dim-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+.dim-card {
+  background: var(--bg-card); backdrop-filter: blur(8px);
+  border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px;
+  box-shadow: var(--shadow-sm);
+}
+.dim-card .dim-ai { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 4px; }
+.dim-card .dim-item { margin: 3px 0; font-size: 0.8rem; }
+.dim-card .dim-label { color: var(--text-dim); font-size: 0.7rem; }
+
+/* ========== Tab3 - 排行榜 ========== */
+.leaderboard-list { max-width: 800px; margin: 0 auto; }
+.rank-row {
+  display: flex; align-items: center; gap: 14px; padding: 14px 18px;
+  background: var(--bg-card); backdrop-filter: blur(10px);
+  border: 1px solid var(--border); border-radius: 14px;
+  margin-bottom: 10px; transition: all 0.3s;
+  box-shadow: var(--shadow-sm);
+}
+.rank-row:hover { border-color: var(--gold); transform: translateX(4px); box-shadow: var(--card-hover-shadow); }
+.rank-row .rank-num { font-size: 1.6rem; font-weight: 900; min-width: 40px; }
+.rank-row .rank-badge { font-size: 1.8rem; }
+.rank-row .rank-info { flex: 1; }
+.rank-row .rank-name { font-weight: 700; font-size: 1rem; }
+.rank-row .rank-rate { font-size: 1.2rem; font-weight: 900; }
+.rank-row .rank-bar {
+  flex: 2; height: 8px; border-radius: 4px; background: var(--rank-bar-bg); overflow: hidden;
+}
+.rank-row .rank-bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s; }
+.rank-row .rank-detail { font-size: 0.8rem; color: var(--text-dim); }
+
+.charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; max-width: 800px; margin-left: auto; margin-right: auto; }
+@media (max-width: 640px) { .charts-row { grid-template-columns: 1fr; } }
+.chart-box {
+  background: var(--bg-card); backdrop-filter: blur(10px);
+  border: 1px solid var(--border); border-radius: 16px; padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+.chart-box h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 10px; text-align: center; }
+
+/* ========== 加载/状态 ========== */
+.loading { text-align: center; padding: 40px; color: var(--text-dim); }
+.loading .spinner {
+  width: 40px; height: 40px; border: 3px solid var(--spinner-border);
+  border-top-color: var(--gold); border-radius: 50%; margin: 0 auto 12px;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.toast {
+  position: fixed; top: 20px; right: 20px; z-index: 999;
+  padding: 12px 24px; border-radius: 12px; font-weight: 600;
+  animation: toastIn 0.3s ease; backdrop-filter: blur(10px);
+}
+.toast.success { background: var(--toast-success-bg); border: 1px solid var(--green); color: var(--toast-success-text); }
+.toast.error { background: var(--toast-error-bg); border: 1px solid var(--red); color: var(--toast-error-text); }
+@keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+/* ========== 响应式 ========== */
+@media (max-width: 640px) {
+  .match-grid { grid-template-columns: 1fr; }
+  .prediction-grid { grid-template-columns: 1fr 1fr; }
+  .champion-strip { gap: 6px; }
+  .champion-card { min-width: 100px; padding: 10px 8px; }
+  .champion-card .champion-name { font-size: 1rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- 粒子背景 -->
+<canvas id="particles"></canvas>
+
+<!-- 主题切换 -->
+<button class="theme-toggle" id="theme-toggle" title="切换亮色/暗黑主题">🌓</button>
+
+<!-- 头部 -->
+<header>
+  <h1>🏆 2026世界杯 · AI预言家对决</h1>
+  <div class="subtitle">Claude 🆚 GPT 🆚 Gemini 🆚 DeepSeek 🆚 豆包 — 谁才是真·预言帝？</div>
+  <div class="countdown-bar" id="countdown">
+    <div class="countdown-item"><div class="countdown-num" id="cd-days">-</div><div class="countdown-label">天</div></div>
+    <div class="countdown-item"><div class="countdown-num" id="cd-hours">-</div><div class="countdown-label">时</div></div>
+    <div class="countdown-item"><div class="countdown-num" id="cd-mins">-</div><div class="countdown-label">分</div></div>
+    <div class="countdown-item"><div class="countdown-num" id="cd-secs">-</div><div class="countdown-label">秒</div></div>
+  </div>
+</header>
+
+<!-- 冠军预测 -->
+<div class="champion-strip" id="champion-strip">
+  <div class="champion-card"><span class="ai-dot" style="background:var(--claude)"></span><span class="ai-name">Claude</span><div class="champion-name">-</div><div class="champion-conf">等待预测</div></div>
+  <div class="champion-card"><span class="ai-dot" style="background:var(--gpt)"></span><span class="ai-name">GPT</span><div class="champion-name">-</div><div class="champion-conf">等待预测</div></div>
+  <div class="champion-card"><span class="ai-dot" style="background:var(--gemini)"></span><span class="ai-name">Gemini</span><div class="champion-name">-</div><div class="champion-conf">等待预测</div></div>
+  <div class="champion-card"><span class="ai-dot" style="background:var(--deepseek)"></span><span class="ai-name">DeepSeek</span><div class="champion-name">-</div><div class="champion-conf">等待预测</div></div>
+  <div class="champion-card"><span class="ai-dot" style="background:var(--doubao)"></span><span class="ai-name">豆包</span><div class="champion-name">-</div><div class="champion-conf">等待预测</div></div>
+</div>
+
+<!-- Tab 导航 -->
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="tab-matches">🏟 赛事看板</button>
+  <button class="tab-btn" data-tab="tab-predict">🤖 AI预测对决</button>
+  <button class="tab-btn" data-tab="tab-leaderboard">🏆 排行榜</button>
+</nav>
+
+<div class="container">
+  <!-- ===== Tab1: 赛事看板 ===== -->
+  <div class="tab-content active" id="tab-matches">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+      <select id="filter-stage" onchange="renderMatches()" style="padding:8px 12px;border-radius:8px;background:var(--bg-card);color:var(--text);border:1px solid var(--border);">
+        <option value="">全部阶段</option>
+        <option value="小组赛">小组赛</option>
+        <option value="1/16决赛">1/16决赛</option>
+        <option value="1/8决赛">1/8决赛</option>
+        <option value="1/4决赛">1/4决赛</option>
+        <option value="半决赛">半决赛</option>
+        <option value="三四名决赛">三四名决赛</option>
+        <option value="决赛">决赛</option>
+      </select>
+      <select id="filter-status" onchange="renderMatches()" style="padding:8px 12px;border-radius:8px;background:var(--bg-card);color:var(--text);border:1px solid var(--border);">
+        <option value="">全部状态</option>
+        <option value="upcoming">即将开始</option>
+        <option value="completed">已结束</option>
+      </select>
+      <select id="filter-group" onchange="renderMatches()" style="padding:8px 12px;border-radius:8px;background:var(--bg-card);color:var(--text);border:1px solid var(--border);">
+        <option value="">全部小组</option>
+        <option value="A">A组</option><option value="B">B组</option><option value="C">C组</option><option value="D">D组</option>
+        <option value="E">E组</option><option value="F">F组</option><option value="G">G组</option><option value="H">H组</option>
+      </select>
+      <button onclick="refreshData()" style="padding:8px 16px;border-radius:8px;background:var(--bg-card);color:var(--gold);border:1px solid var(--border);cursor:pointer;">🔄 刷新</button>
+    </div>
+    <div class="match-grid" id="match-grid"></div>
+
+    <h2 class="section-title">📊 小组积分榜</h2>
+    <div class="group-tables" id="group-tables"></div>
+  </div>
+
+  <!-- ===== Tab2: AI预测对决 ===== -->
+  <div class="tab-content" id="tab-predict">
+    <div class="match-selector">
+      <select id="predict-match-select" onchange="loadPredictions()">
+        <option value="">-- 选择比赛 --</option>
+      </select>
+      <button id="predict-all-btn" onclick="triggerPrediction()">🤖 全部AI预测</button>
+    </div>
+    <div class="match-selector" id="ai-buttons" style="gap:6px;margin-top:4px;">
+      <button onclick="triggerPrediction('claude')" style="background:var(--claude);font-size:0.8rem;opacity:0.5;" disabled id="btn-claude">🧠 Claude</button>
+      <button onclick="triggerPrediction('gpt')" style="background:var(--gpt);font-size:0.8rem;opacity:0.5;" disabled id="btn-gpt">🤖 GPT</button>
+      <button onclick="triggerPrediction('gemini')" style="background:var(--gemini);font-size:0.8rem;opacity:0.5;" disabled id="btn-gemini">💎 Gemini</button>
+      <button onclick="triggerPrediction('deepseek')" style="background:var(--deepseek);font-size:0.8rem;opacity:0.5;" disabled id="btn-deepseek">🔍 DeepSeek</button>
+      <button onclick="triggerPrediction('doubao')" style="background:var(--doubao);font-size:0.8rem;opacity:0.5;" disabled id="btn-doubao">🫘 豆包</button>
+    </div>
+    <div id="predict-area">
+      <div class="loading" style="display:block;"><div style="font-size:3rem;">🔮</div><p style="margin-top:12px;">选择一场比赛，看5大AI如何预测</p></div>
+    </div>
+  </div>
+
+  <!-- ===== Tab3: 排行榜 ===== -->
+  <div class="tab-content" id="tab-leaderboard">
+    <div id="leaderboard-area">
+      <div class="loading" style="display:block;"><div class="spinner"></div><p>加载排行榜...</p></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== 全局状态 ====================
+const AI_COLORS = {
+  claude: '#F97316', gpt: '#10B981', gemini: '#8B5CF6', deepseek: '#3B82F6', doubao: '#F59E0B'
+};
+const AI_NAMES = { claude:'Claude', gpt:'GPT', gemini:'Gemini', deepseek:'DeepSeek', doubao:'豆包' };
+const AI_EMOJI = { claude:'🧠', gpt:'🤖', gemini:'💎', deepseek:'🔍', doubao:'🫘' };
+
+let allMatches = [];
+let currentPredictions = {};
+let leaderboardData = null;
+let charts = {};
+
+// ==================== Toast ====================
+function toast(msg, type='success') {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ==================== 粒子背景 ====================
+function initParticles() {
+  const canvas = document.getElementById('particles');
+  const ctx = canvas.getContext('2d');
+  let particles = [];
+  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+  resize(); window.addEventListener('resize', resize);
+
+  for (let i = 0; i < 60; i++) {
+    particles.push({
+      x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+      r: Math.random() * 2 + 0.5, speed: Math.random() * 0.3 + 0.1,
+      opacity: Math.random() * 0.5 + 0.2, angle: Math.random() * Math.PI * 2,
+    });
+  }
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    particles.forEach(p => {
+      p.y -= p.speed; p.x += Math.sin(p.angle) * 0.2;
+      if (p.y < -10) { p.y = canvas.height + 10; p.x = Math.random() * canvas.width; }
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      const isDark = document.body.classList.contains('dark');
+      ctx.fillStyle = isDark ? `rgba(255,215,0,${p.opacity})` : `rgba(200,144,0,${p.opacity * 0.4})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+// ==================== 倒计时 ====================
+function updateCountdown() {
+  const target = new Date('2026-06-11T14:00:00-06:00'); // 墨西哥城时间
+  const now = new Date();
+  const diff = target - now;
+  if (diff <= 0) {
+    document.getElementById('cd-days').textContent = '0';
+    document.getElementById('cd-hours').textContent = '0';
+    document.getElementById('cd-mins').textContent = '0';
+    document.getElementById('cd-secs').textContent = '0';
+    return;
+  }
+  const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const s = Math.floor((diff % (1000 * 60)) / 1000);
+  document.getElementById('cd-days').textContent = d;
+  document.getElementById('cd-hours').textContent = String(h).padStart(2,'0');
+  document.getElementById('cd-mins').textContent = String(m).padStart(2,'0');
+  document.getElementById('cd-secs').textContent = String(s).padStart(2,'0');
+}
+
+// ==================== 数据加载 ====================
+async function api(url, opts={}) {
+  try { const r = await fetch(url, opts); return await r.json(); }
+  catch(e) { console.error(e); return null; }
+}
+
+async function loadMatches() {
+  const data = await api('/api/matches');
+  if (data) { allMatches = data.matches; }
+  populateMatchSelect();
+}
+
+function populateMatchSelect() {
+  const sel = document.getElementById('predict-match-select');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">-- 选择比赛 --</option>';
+  allMatches.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = `${m.home} vs ${m.away} (${m.date} ${m.time || ''})`;
+    sel.appendChild(opt);
+  });
+}
+
+async function refreshData() {
+  document.getElementById('match-grid').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  await loadMatches();
+  renderMatches();
+  toast('数据已刷新');
+}
+
+// ==================== 渲染赛事看板 ====================
+function renderMatches() {
+  const stageFilter = document.getElementById('filter-stage')?.value || '';
+  const statusFilter = document.getElementById('filter-status')?.value || '';
+  const groupFilter = document.getElementById('filter-group')?.value || '';
+
+  let filtered = [...allMatches];
+  if (stageFilter) filtered = filtered.filter(m => m.stage === stageFilter);
+  if (statusFilter) filtered = filtered.filter(m => m.status === statusFilter);
+  if (groupFilter) filtered = filtered.filter(m => m.group === groupFilter);
+
+  const grid = document.getElementById('match-grid');
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="loading" style="display:block;"><p>没有匹配的比赛</p></div>';
+    renderGroupTables(filtered);
+    return;
+  }
+
+  grid.innerHTML = filtered.map(m => {
+    const hasScore = m.home_score !== null && m.away_score !== null;
+    const scoreDisplay = hasScore
+      ? `<div class="match-score">${m.home_score} - ${m.away_score}</div>`
+      : `<div style="text-align:center;margin:10px 0;color:var(--text-dim);">vs</div>`;
+    const statusClass = `status-${m.status}`;
+    const statusIcon = m.status === 'completed' ? '✅' : m.status === 'live' ? '🔴' : '⏳';
+    const statusText = m.status === 'completed' ? '已结束' : m.status === 'live' ? '进行中' : '即将开始';
+    const weatherInfo = m.weather ? `🌡${m.weather.temp}°C ☁${m.weather.condition}` : '';
+
+    return `
+    <div class="match-card ${statusClass}" onclick="selectMatchForPredict('${m.id}')">
+      <div class="match-stage">${m.stage}${m.group ? ' ' + m.group + '组' : ''} <span style="float:right">${statusIcon} ${statusText}</span></div>
+      <div class="match-teams">
+        <div class="team"><div class="flag">${getFlag(m.home)}</div><div class="name">${m.home}</div></div>
+        ${scoreDisplay}
+        <div class="team"><div class="flag">${getFlag(m.away)}</div><div class="name">${m.away}</div></div>
+      </div>
+      <div class="match-info">
+        <span>📅 ${m.date}</span><span>⏰ ${m.time || '待定'}</span>
+        <span>📍 ${m.city || '待定'}</span>
+        ${weatherInfo ? `<span>${weatherInfo}</span>` : ''}
+        <span>🏟 ${m.venue || '待定'}</span>
+      </div>
+      <button class="predict-btn" onclick="event.stopPropagation();selectMatchForPredict('${m.id}');switchTab('tab-predict');">
+        🤖 AI预测
+      </button>
+      ${hasScore ? `<div style="margin-top:8px;text-align:center;">
+        <button onclick="event.stopPropagation();editResult('${m.id}')" style="padding:4px 12px;border-radius:8px;background:var(--alt-score-bg);color:var(--text-dim);border:1px solid var(--border);cursor:pointer;font-size:0.75rem;">✏️ 修改比分</button>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+
+  renderGroupTables(filtered);
+}
+
+function getFlag(team) {
+  const flags = {
+    '墨西哥':'🇲🇽','加拿大':'🇨🇦','法国':'🇫🇷','巴西':'🇧🇷','英格兰':'🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+    '阿根廷':'🇦🇷','葡萄牙':'🇵🇹','德国':'🇩🇪','西班牙':'🇪🇸','意大利':'🇮🇹',
+    '荷兰':'🇳🇱','乌拉圭':'🇺🇾','哥伦比亚':'🇨🇴','比利时':'🇧🇪','克罗地亚':'🇭🇷',
+    '日本':'🇯🇵','塞内加尔':'🇸🇳','美国':'🇺🇸',
+  };
+  return flags[team] || '🏳️';
+}
+
+function renderGroupTables(filteredMatches) {
+  const container = document.getElementById('group-tables');
+  const groupMatches = (filteredMatches.length ? filteredMatches : allMatches).filter(m => m.group);
+  const groups = {};
+  groupMatches.forEach(m => {
+    if (!groups[m.group]) groups[m.group] = { teams: {}, matches: [] };
+    groups[m.group].matches.push(m);
+    const update = (team) => {
+      if (!team || team.startsWith('待定')) return;
+      if (!groups[m.group].teams[team]) groups[m.group].teams[team] = { name:team, gp:0, w:0, d:0, l:0, gf:0, ga:0, pts:0 };
+    };
+    update(m.home); update(m.away);
+
+    if (m.home_score !== null && m.away_score !== null) {
+      const h = groups[m.group].teams[m.home], a = groups[m.group].teams[m.away];
+      if (h && a) {
+        h.gp++; a.gp++; h.gf += m.home_score; h.ga += m.away_score;
+        a.gf += m.away_score; a.ga += m.home_score;
+        if (m.home_score > m.away_score) { h.w++; h.pts += 3; a.l++; }
+        else if (m.home_score < m.away_score) { a.w++; a.pts += 3; h.l++; }
+        else { h.d++; a.d++; h.pts++; a.pts++; }
+      }
+    }
+  });
+
+  if (!Object.keys(groups).length) {
+    container.innerHTML = '<p style="color:var(--text-dim);text-align:center;">暂无小组赛数据</p>';
+    return;
+  }
+
+  container.innerHTML = Object.entries(groups).sort().map(([g, data]) => {
+    const sorted = Object.values(data.teams).sort((a,b) => b.pts - a.pts || (b.gf-b.ga) - (a.gf-a.ga));
+    return `
+    <details class="group-table" ${g==='A'?'open':''}>
+      <summary>${g}组</summary>
+      <table>
+        <tr><th>#</th><th class="team-col">球队</th><th>赛</th><th>胜</th><th>平</th><th>负</th><th>进球</th><th>失球</th><th>净胜</th><th>分</th></tr>
+        ${sorted.map((t,i) => `
+          <tr>
+            <td>${i+1}</td>
+            <td class="team-col">${getFlag(t.name)} ${t.name}</td>
+            <td>${t.gp}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td>
+            <td>${t.gf}</td><td>${t.ga}</td><td>${t.gf-t.ga}</td>
+            <td><strong>${t.pts}</strong></td>
+          </tr>`).join('')}
+      </table>
+    </details>`;
+  }).join('');
+}
+
+// ==================== 编辑比分弹窗 ====================
+function editResult(matchId) {
+  const match = allMatches.find(m => m.id === matchId);
+  if (!match) return;
+  const oldHome = match.home_score ?? '';
+  const oldAway = match.away_score ?? '';
+  const h = prompt(`${match.home} 进球数:`, oldHome);
+  if (h === null) return;
+  const a = prompt(`${match.away} 进球数:`, oldAway);
+  if (a === null) return;
+  submitResult(matchId, parseInt(h), parseInt(a));
+}
+
+async function submitResult(matchId, home_score, away_score) {
+  const resp = await api(`/api/matches/${matchId}/result`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ home_score, away_score })
+  });
+  if (resp && resp.success) {
+    match = resp.match;
+    const idx = allMatches.findIndex(m => m.id === matchId);
+    if (idx >= 0) allMatches[idx] = match;
+    renderMatches();
+    toast(`比分已更新: ${match.home} ${home_score}-${away_score} ${match.away}`);
+  }
+}
+
+// ==================== AI 预测相关 ====================
+async function triggerPrediction(aiOnly) {
+  const matchId = document.getElementById('predict-match-select').value;
+  if (!matchId) { toast('请先选择一场比赛', 'error'); return; }
+  const match = allMatches.find(m => m.id === matchId);
+  if (!match) { toast('比赛不存在', 'error'); return; }
+
+  const area = document.getElementById('predict-area');
+  area.innerHTML = `
+    <div class="prediction-header">
+      <div class="match-title">${match.home} vs ${match.away}</div>
+      <div class="match-meta">
+        <span>📅 ${match.date} ⏰ ${match.time || ''}</span>
+        <span>📍 ${match.venue || ''}, ${match.city || ''}</span>
+        <span>${match.stage}${match.group ? ' ' + match.group + '组' : ''}</span>
+      </div>
+    </div>
+    <div class="prediction-grid">
+      ${Object.entries(AI_COLORS).map(([id, color]) => `
+        <div class="pred-card" id="pred-card-${id}">
+          <div class="ai-badge" style="background:${color}">${AI_EMOJI[id]} ${AI_NAMES[id]}</div>
+          <div class="loading" style="display:block;"><div class="spinner"></div><p style="font-size:0.8rem;">预测中...</p></div>
+        </div>
+      `).join('')}
+    </div>
+    <div id="consensus-area"></div>
+    <div class="dimensions-panel" id="dimensions-area"></div>
+  `;
+
+  const url = `/api/predict/${matchId}${aiOnly ? '?ai=' + aiOnly : ''}`;
+  const resp = await api(url, { method: 'POST' });
+
+  if (resp && resp.success) {
+    currentPredictions = resp.results;
+    displayPredictions(resp.results, match);
+    toast(aiOnly ? `${AI_NAMES[aiOnly]} 预测完成!` : '5大AI预测完成! 🔮');
+  } else {
+    area.innerHTML = '<div class="loading" style="display:block;"><p style="color:var(--red);">预测失败</p><p style="font-size:0.8rem;color:var(--text-dim);">请检查 .env 文件配置至少一个 API Key：<br>Claude → ANTHROPIC_API_KEY | GPT → OPENAI_API_KEY<br>Gemini → GEMINI_API_KEY | DeepSeek → DEEPSEEK_API_KEY<br>豆包 → DOUBAO_API_KEY</p></div>';
+  }
+}
+
+function displayPredictions(results, match) {
+  let consensusHTML = '';
+  let dimsHTML = '<div class="dim-title">🔍 多维度分析对比</div><div class="dim-grid">';
+
+  const scoreVotes = {};
+  const winnerVotes = {};
+
+  Object.entries(results).forEach(([aiId, record]) => {
+    const card = document.getElementById(`pred-card-${aiId}`);
+    if (!card) return;
+    const color = AI_COLORS[aiId];
+
+    if (record.error || record.prediction?.error) {
+      card.innerHTML = `
+        <div class="ai-badge" style="background:${color}">${AI_EMOJI[aiId]} ${AI_NAMES[aiId]}</div>
+        <p style="color:var(--red);font-size:0.85rem;margin-top:10px;">❌ ${record.error || record.prediction?.error || '未知错误'}</p>
+      `;
+      return;
+    }
+
+    const pred = record.prediction;
+    const mainP = pred.predictions?.[0] || {};
+    const mainScore = mainP.score || '?';
+    const mainConf = mainP.confidence || 0;
+    const winner = pred.winner || '?';
+
+    if (mainScore !== '?') {
+      if (!scoreVotes[mainScore]) scoreVotes[mainScore] = [];
+      scoreVotes[mainScore].push(aiId);
+    }
+    if (!winnerVotes[winner]) winnerVotes[winner] = [];
+    winnerVotes[winner].push(aiId);
+
+    const altScores = (pred.predictions || []).slice(1).map(p =>
+      `<span class="alt-score">${p.score} ${(p.confidence*100).toFixed(0)}%</span>`
+    ).join('');
+
+    card.innerHTML = `
+      <div class="ai-badge" style="background:${color}">${AI_EMOJI[aiId]} ${AI_NAMES[aiId]}</div>
+      <div class="main-score" style="border-color:${color}">${mainScore}</div>
+      <div class="winner-label">${winner === '主队胜' ? '🏆 '+match.home+'胜' : winner === '客队胜' ? '🏆 '+match.away+'胜' : '🤝 平局'}</div>
+      <div class="conf-bar"><div class="conf-fill" style="width:${mainConf*100}%;background:${color}"></div></div>
+      <div style="font-size:0.75rem;color:var(--text-dim);margin-top:2px;">信心度 ${(mainConf*100).toFixed(0)}%</div>
+      ${altScores ? `<div class="alt-scores">${altScores}</div>` : ''}
+      ${pred.key_factor ? `<div style="margin-top:8px;font-size:0.78rem;color:var(--gold);">🔑 ${pred.key_factor}</div>` : ''}
+      ${pred.reasoning ? `<div style="margin-top:6px;font-size:0.75rem;color:var(--text-dim);line-height:1.4;">💬 ${pred.reasoning}</div>` : ''}
+    `;
+
+    if (pred.dimensions) {
+      dimsHTML += `
+        <div class="dim-card">
+          <div class="dim-ai"><span style="color:${color}">●</span> ${AI_NAMES[aiId]}</div>
+          ${Object.entries(pred.dimensions).map(([k,v]) => `
+            <div class="dim-item"><span class="dim-label">${getDimLabel(k)}:</span> ${v}</div>
+          `).join('')}
+        </div>`;
+    }
+  });
+  dimsHTML += '</div>';
+  document.getElementById('dimensions-area').innerHTML = dimsHTML;
+
+  const topScore = Object.entries(scoreVotes).sort((a,b) => b[1].length - a[1].length)[0];
+  const topWinner = Object.entries(winnerVotes).sort((a,b) => b[1].length - a[1].length)[0];
+  consensusHTML = `
+    <div class="consensus-panel">
+      <div class="consensus-title">🔥 AI共识</div>
+      ${topWinner ? `<div>${topWinner[1].length}/5 AI 预测 <strong>${topWinner[0]}</strong></div>` : ''}
+      ${topScore ? `<div class="consensus-score">最热比分: ${topScore[0]} <span style="font-size:0.8rem;color:var(--text-dim);">(${topScore[1].map(id=>AI_EMOJI[id]).join(' ')})</span></div>` : ''}
+    </div>`;
+  document.getElementById('consensus-area').innerHTML = consensusHTML;
+}
+
+function getDimLabel(key) {
+  const labels = {
+    tactics: '战术博弈', key_matchup: '关键对位', physical: '体能储备',
+    mental: '心理层面', weather: '天气影响', referee: '裁判因素', x_factor: 'X因素'
+  };
+  return labels[key] || key;
+}
+
+async function loadPredictions() {
+  const matchId = document.getElementById('predict-match-select').value;
+  if (!matchId) {
+    document.getElementById('predict-area').innerHTML = '<div class="loading" style="display:block;"><div style="font-size:3rem;">🔮</div><p style="margin-top:12px;">选择一场比赛，看5大AI如何预测</p></div>';
+    return;
+  }
+
+  const match = allMatches.find(m => m.id === matchId);
+  const area = document.getElementById('predict-area');
+  area.innerHTML = `
+    <div class="prediction-header">
+      <div class="match-title">${match.home} vs ${match.away}</div>
+      <div class="match-meta">
+        <span>📅 ${match.date} ⏰ ${match.time || ''}</span>
+        <span>📍 ${match.venue || ''}, ${match.city || ''}</span>
+        <span>${match.stage}${match.group ? ' ' + match.group + '组' : ''}</span>
+      </div>
+    </div>
+  `;
+
+  const resp = await api(`/api/predictions/${matchId}`);
+  if (resp && resp.predictions && resp.predictions.length > 0) {
+    const results = {};
+    resp.predictions.forEach(p => { results[p.ai] = p; });
+    currentPredictions = results;
+    displayPredictions(results, match);
+  } else {
+    area.innerHTML += `
+      <div style="text-align:center;padding:40px;">
+        <p style="font-size:1.2rem;margin-bottom:12px;">还没有AI预测记录</p>
+        <button onclick="triggerPrediction()" class="match-selector" style="padding:12px 32px;border-radius:12px;background:var(--btn-gradient);color:var(--btn-text);border:none;font-weight:700;cursor:pointer;font-size:1rem;">🤖 全部AI预测</button>
+      </div>
+    `;
+  }
+}
+
+function selectMatchForPredict(matchId) {
+  document.getElementById('predict-match-select').value = matchId;
+  loadPredictions();
+}
+
+// ==================== 排行榜 ====================
+async function loadLeaderboard() {
+  const area = document.getElementById('leaderboard-area');
+  const data = await api('/api/leaderboard');
+  if (!data) { area.innerHTML = '<div class="loading" style="display:block;"><p>加载失败</p></div>'; return; }
+  leaderboardData = data;
+
+  const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+
+  area.innerHTML = `
+    <div class="leaderboard-list">
+      ${data.rankings.map((r, i) => `
+        <div class="rank-row">
+          <div class="rank-num">${medals[i] || ''}</div>
+          <div class="rank-info">
+            <div class="rank-name"><span style="color:${r.color}">●</span> ${r.emoji} ${r.name}</div>
+            <div class="rank-detail">
+              比分命中率 ${r.score_rate}% | 冷门捕捉 ${r.upset_catches}次 |
+              小组赛 ${r.group_stage.total > 0 ? (r.group_stage.correct/r.group_stage.total*100).toFixed(0) : 0}% |
+              淘汰赛 ${r.knockout.total > 0 ? (r.knockout.correct/r.knockout.total*100).toFixed(0) : 0}%
+            </div>
+          </div>
+          <div class="rank-bar"><div class="rank-bar-fill" style="width:${r.winner_rate}%;background:${r.color};"></div></div>
+          <div class="rank-rate" style="color:${r.color}">${r.winner_rate}%</div>
+          <div class="rank-detail" style="min-width:50px;text-align:right;">${r.correct_winner}/${r.total_predictions}</div>
+        </div>
+      `).join('')}
+      ${data.rankings.length === 0 ? '<p style="text-align:center;color:var(--text-dim);padding:40px;">还没有预测数据，先预测几场比赛吧！</p>' : ''}
+    </div>
+    <div class="charts-row">
+      <div class="chart-box"><h3>📊 五维能力雷达图</h3><canvas id="radar-chart"></canvas></div>
+      <div class="chart-box"><h3>📈 胜负预测准确率</h3><canvas id="bar-chart"></canvas></div>
+    </div>
+  `;
+
+  renderCharts(data);
+}
+
+function renderCharts(data) {
+  const styles = getComputedStyle(document.body);
+  const chartTick = styles.getPropertyValue('--chart-tick').trim() || '#6b7280';
+  const chartGrid = styles.getPropertyValue('--chart-grid').trim() || 'rgba(0,0,0,0.08)';
+  const chartLabel = styles.getPropertyValue('--chart-label').trim() || '#1a1a2e';
+  const chartLegend = styles.getPropertyValue('--chart-legend').trim() || '#1a1a2e';
+
+  // 雷达图
+  const radarCtx = document.getElementById('radar-chart')?.getContext('2d');
+  if (radarCtx && data.rankings.length) {
+    if (charts.radar) charts.radar.destroy();
+    const labels = ['胜负准确率', '比分命中率', '冷门捕捉', '小组赛表现', '淘汰赛表现'];
+    const maxUpset = Math.max(...data.rankings.map(r => r.upset_catches), 1);
+    charts.radar = new Chart(radarCtx, {
+      type: 'radar',
+      data: {
+        labels,
+        datasets: data.rankings.map(r => ({
+          label: r.emoji + ' ' + r.name,
+          data: [
+            parseFloat(r.winner_rate),
+            parseFloat(r.score_rate),
+            (r.upset_catches / maxUpset * 100),
+            r.group_stage.total > 0 ? parseFloat((r.group_stage.correct/r.group_stage.total*100).toFixed(1)) : 0,
+            r.knockout.total > 0 ? parseFloat((r.knockout.correct/r.knockout.total*100).toFixed(1)) : 0,
+          ],
+          borderColor: r.color,
+          backgroundColor: r.color + '20',
+          borderWidth: 2,
+          pointBackgroundColor: r.color,
+        }))
+      },
+      options: {
+        responsive: true,
+        scales: { r: { beginAtZero: true, max: 100, ticks: { stepSize: 20, color: chartTick, backdropColor: 'transparent' }, grid: { color: chartGrid }, pointLabels: { color: chartLabel, font: { size: 11 } } } },
+        plugins: { legend: { labels: { color: chartLegend, font: { size: 11 }, padding: 12 } } }
+      }
+    });
+  }
+
+  // 柱状图
+  const barCtx = document.getElementById('bar-chart')?.getContext('2d');
+  if (barCtx && data.rankings.length) {
+    if (charts.bar) charts.bar.destroy();
+    charts.bar = new Chart(barCtx, {
+      type: 'bar',
+      data: {
+        labels: data.rankings.map(r => r.emoji + ' ' + r.name),
+        datasets: [{
+          label: '胜负准确率 %',
+          data: data.rankings.map(r => parseFloat(r.winner_rate)),
+          backgroundColor: data.rankings.map(r => r.color + '99'),
+          borderColor: data.rankings.map(r => r.color),
+          borderWidth: 2,
+          borderRadius: 8,
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true, max: 100, ticks: { color: chartTick }, grid: { color: chartGrid } }, x: { ticks: { color: chartLabel, font: { size: 11 } } } },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+}
+
+// ==================== 冠军预测 ====================
+async function loadChampionPredictions() {
+  const data = await api('/api/predictions-champion');
+  if (!data || !data.championship || !data.championship.length) return;
+
+  const strip = document.getElementById('champion-strip');
+  const cards = strip.querySelectorAll('.champion-card');
+
+  data.championship.forEach(pred => {
+    const aiId = pred.ai;
+    const p = pred.prediction;
+    if (!p || p.error) return;
+
+    const idxMap = { claude:0, gpt:1, gemini:2, deepseek:3, doubao:4 };
+    const idx = idxMap[aiId];
+    if (idx !== undefined && cards[idx]) {
+      cards[idx].innerHTML = `
+        <span class="ai-dot" style="background:${AI_COLORS[aiId]}"></span>
+        <span class="ai-name">${AI_NAMES[aiId]}</span>
+        <div class="champion-name">🏆 ${p.champion || '?'}</div>
+        <div class="champion-conf">信心 ${p.confidence ? (p.confidence*100).toFixed(0)+'%' : '?'}</div>
+      `;
+      if (p.reasoning) cards[idx].title = p.reasoning;
+    }
+  });
+
+  // "预测冠军"按钮
+  if (!data.championship.length || data.championship.length < 5) {
+    if (!document.getElementById('champ-predict-btn')) {
+      const btn = document.createElement('button');
+      btn.id = 'champ-predict-btn';
+      btn.textContent = '👑 让AI预测冠军';
+      btn.onclick = predictChampion;
+      btn.style.cssText = 'display:block;margin:10px auto;padding:10px 28px;border-radius:20px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;font-weight:700;cursor:pointer;font-size:0.95rem;';
+      document.getElementById('champion-strip').after(btn);
+    }
+  }
+}
+
+async function predictChampion() {
+  const btn = document.getElementById('champ-predict-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 预测中...'; }
+  const resp = await api('/api/predict-champion', { method: 'POST' });
+  if (resp && resp.success) {
+    toast('冠军预测完成! 👑');
+    if (btn) btn.remove();
+    await loadChampionPredictions();
+  } else {
+    if (btn) { btn.disabled = false; btn.textContent = '👑 让AI预测冠军'; }
+    toast('预测失败，请检查 API Key', 'error');
+  }
+}
+
+// ==================== Tab 切换 ====================
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelector(`[data-tab="${tabId}"]`)?.classList.add('active');
+  document.getElementById(tabId)?.classList.add('active');
+  if (tabId === 'tab-leaderboard') loadLeaderboard();
+}
+
+// ==================== 主题切换 ====================
+function initTheme() {
+  const saved = localStorage.getItem('wc-theme');
+  if (saved === 'dark') document.body.classList.add('dark');
+  else if (saved === 'light') document.body.classList.remove('dark');
+  // 默认跟随系统
+  else if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) document.body.classList.add('dark');
+
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    document.body.classList.toggle('dark');
+    localStorage.setItem('wc-theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+    // 重新渲染图表（如果已加载）
+    if (leaderboardData) renderCharts(leaderboardData);
+  });
+
+  // 监听系统主题变化
+  window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener('change', e => {
+    if (!localStorage.getItem('wc-theme')) {
+      document.body.classList.toggle('dark', e.matches);
+    }
+  });
+}
+
+// ==================== AI 状态检查 ====================
+async function updateAIStatus() {
+  const data = await api('/api/status');
+  if (!data || !data.status) return;
+
+  let availableCount = 0;
+  const ids = ['claude', 'gpt', 'gemini', 'deepseek', 'doubao'];
+
+  ids.forEach(id => {
+    const btn = document.getElementById(`btn-${id}`);
+    const info = data.status[id];
+    if (!btn || !info) return;
+
+    if (info.available) {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+      btn.title = `${info.name}: ${info.model} (已配置)`;
+      availableCount++;
+    } else {
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
+      btn.style.cursor = 'not-allowed';
+      btn.title = `${info.name}: 未配置 (需设置 ${info.key_env})`;
+    }
+  });
+
+  // 更新全部预测按钮
+  const allBtn = document.getElementById('predict-all-btn');
+  if (allBtn) {
+    allBtn.textContent = availableCount > 0 ? `🤖 全部AI预测 (${availableCount}/5)` : '🤖 全部AI预测 (无可用AI)';
+    allBtn.disabled = availableCount === 0;
+  }
+
+  console.log(`🤖 AI 状态: ${availableCount}/${ids.length} 可用`);
+}
+
+// ==================== 初始化 ====================
+async function init() {
+  initTheme();
+  initParticles();
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+
+  // 加载数据
+  await loadMatches();
+  renderMatches();
+  await loadChampionPredictions();
+  await updateAIStatus();
+
+  console.log('🏆 2026世界杯 AI预言家对决 已就绪!');
+  console.log('   Claude | GPT | Gemini | DeepSeek | 豆包');
+  console.log('   按 F12 查看详细日志');
+}
+
+init();
+</script>
+</body>
+</html>

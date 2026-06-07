@@ -1,0 +1,18 @@
+{
+  "name": "worldcup-ai-predictor",
+  "version": "1.0.0",
+  "description": "2026世界杯 AI预测对比平台 - 5大AI谁最准？",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "openai": "^4.67.0",
+    "@anthropic-ai/sdk": "^0.32.0",
+    "@google/generative-ai": "^0.21.0"
+  }
+}
