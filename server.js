@@ -1,7 +1,6 @@
 /**
  * 2026世界杯 AI预言家对决 - 后端服务器
- * Claude (Anthropic) vs GPT (OpenAI) vs Gemini (Google) vs DeepSeek vs 豆包 (ByteDance)
- * 每个 AI 使用各自的真实 API，用户可自由配置想用的模型
+ * Claude vs GPT vs Gemini vs DeepSeek vs 豆包
  */
 
 require('dotenv').config();
@@ -21,6 +20,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 const DATA_DIR = path.join(__dirname, 'data');
 const MATCHES_FILE = path.join(DATA_DIR, 'matches.json');
 const PREDICTIONS_FILE = path.join(DATA_DIR, 'predictions.json');
+const BETS_FILE = path.join(DATA_DIR, 'bets.json');
 
 // 确保 data 目录存在
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -40,140 +40,31 @@ function writeJSON(filepath, data) {
   fs.writeFileSync(filepath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
-// ==================== AI 客户端初始化 ====================
-// 每个 AI 使用自己的 API，各自独立初始化
-
+// ==================== DeepSeek 客户端（全部AI统一走DeepSeek API） ====================
 const { OpenAI } = require('openai');
-
-// --- Claude (Anthropic) ---
-let anthropicClient = null;
-try {
-  const Anthropic = require('@anthropic-ai/sdk').default || require('@anthropic-ai/sdk');
-  if (process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY !== 'your-anthropic-key-here') {
-    anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    console.log('✅ Claude (Anthropic) 客户端已就绪');
-  } else {
-    console.log('⚠️  未配置 ANTHROPIC_API_KEY，Claude 不可用');
-  }
-} catch (e) { console.log('⚠️  Anthropic SDK 未安装或初始化失败:', e.message); }
-
-// --- GPT (OpenAI) ---
-let openaiClient = null;
-try {
-  if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'your-openai-key-here') {
-    openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    console.log('✅ GPT (OpenAI) 客户端已就绪');
-  } else {
-    console.log('⚠️  未配置 OPENAI_API_KEY，GPT 不可用');
-  }
-} catch (e) { console.log('⚠️  OpenAI 初始化失败:', e.message); }
-
-// --- Gemini (Google) ---
-let geminiClient = null;
-try {
-  if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your-gemini-key-here') {
-    geminiClient = process.env.GEMINI_API_KEY; // Gemini 直接使用 API Key 字符串
-    console.log('✅ Gemini (Google) 客户端已就绪');
-  } else {
-    console.log('⚠️  未配置 GEMINI_API_KEY，Gemini 不可用');
-  }
-} catch (e) { console.log('⚠️  Gemini 初始化失败:', e.message); }
-
-// --- DeepSeek ---
 let deepseekClient = null;
+
 try {
-  if (process.env.DEEPSEEK_API_KEY && process.env.DEEPSEEK_API_KEY !== 'your-deepseek-key-here') {
+  if (process.env.DEEPSEEK_API_KEY && process.env.DEEPSEEK_API_KEY !== 'sk-your-deepseek-key-here') {
     deepseekClient = new OpenAI({
       apiKey: process.env.DEEPSEEK_API_KEY,
-      baseURL: process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com'
+      baseURL: 'https://api.deepseek.com'
     });
-    console.log('✅ DeepSeek 客户端已就绪');
+    console.log('✅ DeepSeek 客户端已就绪（5个AI全部走DeepSeek）');
   } else {
-    console.log('⚠️  未配置 DEEPSEEK_API_KEY，DeepSeek 不可用');
+    console.log('⚠️  未配置 DEEPSEEK_API_KEY，请在 .env 中设置');
   }
-} catch (e) { console.log('⚠️  DeepSeek 初始化失败:', e.message); }
-
-// --- 豆包 (ByteDance Volcengine Ark) ---
-let doubaoClient = null;
-try {
-  if (process.env.DOUBAO_API_KEY && process.env.DOUBAO_API_KEY !== 'your-doubao-key-here') {
-    doubaoClient = new OpenAI({
-      apiKey: process.env.DOUBAO_API_KEY,
-      baseURL: process.env.DOUBAO_BASE_URL || 'https://ark.cn-beijing.volces.com/api/v3'
-    });
-    console.log('✅ 豆包 (ByteDance) 客户端已就绪');
-  } else {
-    console.log('⚠️  未配置 DOUBAO_API_KEY，豆包不可用');
-  }
-} catch (e) { console.log('⚠️  豆包初始化失败:', e.message); }
+} catch (e) { console.log('DeepSeek 初始化失败:', e.message); }
 
 // ==================== AI 配置表 ====================
-// 每个 AI 使用各自真实的模型和 API
+// 全部走 DeepSeek API，通过不同人设+温度产生差异化预测
 const AI_CONFIG = {
-  claude: {
-    name: 'Claude',
-    provider: 'anthropic',
-    model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-6',
-    color: '#F97316',
-    emoji: '🧠',
-    temp: 0.4,
-    style: '你是一位谨慎保守的足球分析师，注重防守和战术纪律，不轻易预测高比分。'
-  },
-  gpt: {
-    name: 'GPT',
-    provider: 'openai',
-    model: process.env.GPT_MODEL || 'gpt-4.1',
-    color: '#10B981',
-    emoji: '🤖',
-    temp: 0.95,
-    style: '你是一位大胆激进的足球分析师，喜欢预测冷门和进攻大战，善于发现被低估的球队。'
-  },
-  gemini: {
-    name: 'Gemini',
-    provider: 'google',
-    model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
-    color: '#8B5CF6',
-    emoji: '💎',
-    temp: 0.7,
-    style: '你是一位全面的足球分析师，善于从战术、体能、心理等多维度综合判断。'
-  },
-  deepseek: {
-    name: 'DeepSeek',
-    provider: 'deepseek',
-    model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
-    color: '#3B82F6',
-    emoji: '🔍',
-    temp: 0.6,
-    style: '你是一位数据驱动的足球分析师，用统计数据和历史规律说话，理性客观。'
-  },
-  doubao: {
-    name: '豆包',
-    provider: 'doubao',
-    model: process.env.DOUBAO_MODEL || 'doubao-1.5-pro-32k',
-    color: '#F59E0B',
-    emoji: '🫘',
-    temp: 0.8,
-    style: '你是一位直觉敏锐的足球分析师，擅长捕捉比赛中的X因素和意外变量。'
-  },
+  claude:  { name: 'Claude',   model: 'deepseek-chat', color: '#F97316', emoji: '🧠', temp: 0.3, style: '你是极度保守的防守专家。永远预测总进球<2.5个。比分只会在1-0、2-0、0-0、1-1中选择。从不预测冷门，永远看好实力更强的球队。你反感高比分和进攻足球。' },
+  gpt:     { name: 'GPT',      model: 'deepseek-chat', color: '#10B981', emoji: '🤖', temp: 1.2, style: '你是极端激进的分析师，就爱预测冷门和进球大战。永远预测总进球>2.5个。比分只会选3-2、4-2、3-1之类的高比分。每场必猜有冷门，你就是不喜欢热门球队赢。' },
+  gemini:  { name: 'Gemini',   model: 'deepseek-chat', color: '#8B5CF6', emoji: '💎', temp: 0.9, style: '你是中立客观的分析师，但有一个怪癖：你特别关注天气和场地对比赛的影响，会把天气作为最关键因素。你的预测往往因为天气原因出人意料。' },
+  deepseek:{ name: 'DeepSeek', model: 'deepseek-chat', color: '#3B82F6', emoji: '🔍', temp: 0.5, style: '你是纯数据派。你只相信FIFA排名、历史交锋记录和射门转化率。你会引用真实的数据和统计来支持你的预测。你的预测永远基于数据逻辑，忽略情感和士气因素。' },
+  doubao:  { name: '豆包',     model: 'deepseek-chat', color: '#F59E0B', emoji: '🫘', temp: 1.1, style: '你是靠直觉和运气的分析师。你喜欢猜平局和客队爆冷。你特别相信"世界杯魔咒"——卫冕冠军小组出局、东道主必进淘汰赛之类的玄学。你不相信纸面实力，只信玄学。' },
 };
-
-// ==================== 判断 AI 是否可用 ====================
-function isAIAvailable(aiId) {
-  const config = AI_CONFIG[aiId];
-  if (!config) return false;
-  switch (config.provider) {
-    case 'anthropic': return !!anthropicClient;
-    case 'openai': return !!openaiClient;
-    case 'google': return !!geminiClient;
-    case 'deepseek': return !!deepseekClient;
-    case 'doubao': return !!doubaoClient;
-    default: return false;
-  }
-}
-
-function getAvailableAIs() {
-  return Object.keys(AI_CONFIG).filter(isAIAvailable);
-}
 
 // ==================== 深度预测 Prompt 构建 ====================
 function buildPredictionPrompt(match, aiStyle) {
@@ -234,89 +125,28 @@ function buildPredictionPrompt(match, aiStyle) {
 }
 \`\`\`
 
-请确保predictions中confidence总和为1.0。只输出JSON，不要其他文字。`;
+请基于你的真实足球知识进行分析，不要编造不存在的数据、统计数字或球员名字。如果对某支球队的具体情况不了解，请诚实说明并从宏观角度判断。请确保predictions中confidence总和为1.0。只输出JSON，不要其他文字。`;
 }
 
-// ==================== AI 调用函数（各自走真实 API） ====================
+// ==================== AI 调用函数 ====================
+// 全部 AI 统一走 DeepSeek API，通过不同人设+温度产生差异化预测
 async function callAI(aiId, match) {
   const config = AI_CONFIG[aiId];
   if (!config) return { error: `未知 AI: ${aiId}` };
-  if (!isAIAvailable(aiId)) return { error: `${config.name} API Key 未配置，请在 .env 中设置 ${config.provider.toUpperCase()}_API_KEY` };
+  if (!deepseekClient) return { error: 'DeepSeek API Key 未配置，请在 .env 中设置 DEEPSEEK_API_KEY' };
 
   const prompt = buildPredictionPrompt(match, config.style);
 
   try {
-    let text;
-    switch (config.provider) {
-      // --- Anthropic (Claude) ---
-      case 'anthropic': {
-        const resp = await anthropicClient.messages.create({
-          model: config.model,
-          max_tokens: 2000,
-          temperature: config.temp,
-          system: '你是一位资深足球分析师。请严格按照JSON格式输出预测结果，不要输出任何其他文字。',
-          messages: [{ role: 'user', content: prompt }],
-        });
-        text = resp.content[0].text;
-        break;
-      }
-
-      // --- OpenAI (GPT) ---
-      case 'openai': {
-        const resp = await openaiClient.chat.completions.create({
-          model: config.model,
-          messages: [{ role: 'user', content: prompt }],
-          temperature: config.temp,
-          max_tokens: 2000,
-        });
-        text = resp.choices[0].message.content;
-        break;
-      }
-
-      // --- Google (Gemini) ---
-      case 'google': {
-        const { GoogleGenerativeAI } = require('@google/generative-ai');
-        const genAI = new GoogleGenerativeAI(geminiClient);
-        const model = genAI.getGenerativeModel({ model: config.model });
-        const result = await model.generateContent({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }],
-          generationConfig: { temperature: config.temp, maxOutputTokens: 2000 },
-        });
-        text = result.response.text();
-        break;
-      }
-
-      // --- DeepSeek ---
-      case 'deepseek': {
-        const resp = await deepseekClient.chat.completions.create({
-          model: config.model,
-          messages: [{ role: 'user', content: prompt }],
-          temperature: config.temp,
-          max_tokens: 2000,
-        });
-        text = resp.choices[0].message.content;
-        break;
-      }
-
-      // --- 豆包 (ByteDance Volcengine) ---
-      case 'doubao': {
-        const resp = await doubaoClient.chat.completions.create({
-          model: config.model,
-          messages: [{ role: 'user', content: prompt }],
-          temperature: config.temp,
-          max_tokens: 2000,
-        });
-        text = resp.choices[0].message.content;
-        break;
-      }
-
-      default:
-        return { error: `不支持的提供商: ${config.provider}` };
-    }
-
-    return parseAIResponse(text, aiId);
+    const resp = await deepseekClient.chat.completions.create({
+      model: config.model,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: config.temp,
+      max_tokens: 2000,
+    });
+    return parseAIResponse(resp.choices[0].message.content, aiId);
   } catch (e) {
-    console.error(`${aiId} (${config.provider}) 调用失败:`, e.message);
+    console.error(`${aiId} 调用失败:`, e.message);
     return { error: `${config.name} 调用失败: ${e.message}` };
   }
 }
@@ -578,10 +408,7 @@ app.post('/api/predict/:matchId', async (req, res) => {
   const { ai } = req.query; // 可选: 只调用指定的 AI
   const predictions = readJSON(PREDICTIONS_FILE, { championship: [], matches: [] });
 
-  const aiList = ai ? [ai] : getAvailableAIs();
-  if (aiList.length === 0) {
-    return res.status(400).json({ error: '没有可用的 AI，请在 .env 中配置至少一个 API Key' });
-  }
+  const aiList = ai ? [ai] : Object.keys(AI_CONFIG);
   const results = {};
 
   console.log(`\n🤖 开始预测: ${match.home} vs ${match.away}`);
@@ -592,7 +419,7 @@ app.post('/api/predict/:matchId', async (req, res) => {
     const config = AI_CONFIG[aiId];
     if (!config) return { aiId, error: '未知 AI' };
 
-    console.log(`   ⏳ 调用 ${config.name} (${config.provider})...`);
+    console.log(`   ⏳ 调用 ${config.name}...`);
     const startTime = Date.now();
     const prediction = await callAI(aiId, match);
     const elapsed = Date.now() - startTime;
@@ -609,7 +436,6 @@ app.post('/api/predict/:matchId', async (req, res) => {
       match_id: match.id,
       ai: aiId,
       model: config.model,
-      provider: config.provider,
       prediction,
       correct: null,
       score_correct: null,
@@ -652,10 +478,7 @@ app.get('/api/predictions/:matchId', (req, res) => {
 // 冠军预测
 app.post('/api/predict-champion', async (req, res) => {
   const { ai } = req.query;
-  const aiList = ai ? [ai] : getAvailableAIs();
-  if (aiList.length === 0) {
-    return res.status(400).json({ error: '没有可用的 AI，请在 .env 中配置至少一个 API Key' });
-  }
+  const aiList = ai ? [ai] : Object.keys(AI_CONFIG);
   const predictions = readJSON(PREDICTIONS_FILE, { championship: [], matches: [] });
   const prompt = buildChampionPrompt();
   const results = {};
@@ -665,75 +488,24 @@ app.post('/api/predict-champion', async (req, res) => {
   for (const aiId of aiList) {
     const config = AI_CONFIG[aiId];
     if (!config) continue;
-    if (!isAIAvailable(aiId)) { results[aiId] = { error: `${config.name} API Key 未配置` }; continue; }
+    if (!deepseekClient) { results[aiId] = { error: 'DeepSeek API Key 未配置' }; continue; }
 
-    console.log(`   ⏳ 调用 ${config.name} (${config.provider})...`);
+    console.log(`   ⏳ 调用 ${config.name}...`);
     const startTime = Date.now();
 
     try {
-      let text;
-      switch (config.provider) {
-        case 'anthropic': {
-          const resp = await anthropicClient.messages.create({
-            model: config.model,
-            max_tokens: 1000,
-            temperature: config.temp,
-            system: '你是一位资深足球分析师。请严格按照JSON格式输出冠军预测结果。',
-            messages: [{ role: 'user', content: prompt + `\n你的分析风格：${config.style}` }],
-          });
-          text = resp.content[0].text;
-          break;
-        }
-        case 'openai': {
-          const resp = await openaiClient.chat.completions.create({
-            model: config.model,
-            messages: [{ role: 'user', content: prompt + `\n你的分析风格：${config.style}` }],
-            temperature: config.temp,
-            max_tokens: 1000,
-          });
-          text = resp.choices[0].message.content;
-          break;
-        }
-        case 'google': {
-          const { GoogleGenerativeAI } = require('@google/generative-ai');
-          const genAI = new GoogleGenerativeAI(geminiClient);
-          const model = genAI.getGenerativeModel({ model: config.model });
-          const result = await model.generateContent({
-            contents: [{ role: 'user', parts: [{ text: prompt + `\n你的分析风格：${config.style}` }] }],
-            generationConfig: { temperature: config.temp, maxOutputTokens: 1000 },
-          });
-          text = result.response.text();
-          break;
-        }
-        case 'deepseek': {
-          const resp = await deepseekClient.chat.completions.create({
-            model: config.model,
-            messages: [{ role: 'user', content: prompt + `\n你的分析风格：${config.style}` }],
-            temperature: config.temp,
-            max_tokens: 1000,
-          });
-          text = resp.choices[0].message.content;
-          break;
-        }
-        case 'doubao': {
-          const resp = await doubaoClient.chat.completions.create({
-            model: config.model,
-            messages: [{ role: 'user', content: prompt + `\n你的分析风格：${config.style}` }],
-            temperature: config.temp,
-            max_tokens: 1000,
-          });
-          text = resp.choices[0].message.content;
-          break;
-        }
-        default:
-          continue;
-      }
-
+      const resp = await deepseekClient.chat.completions.create({
+        model: config.model,
+        messages: [{ role: 'user', content: prompt + `\n你的分析风格：${config.style}` }],
+        temperature: config.temp,
+        max_tokens: 1000,
+      });
+      const text = resp.choices[0].message.content;
       const parsed = parseChampionResponse(text, aiId);
       const elapsed = Date.now() - startTime;
       console.log(`   ✅ ${config.name}: 🏆${parsed.champion || parsed.error || '?'} (${elapsed}ms)`);
 
-      const record = { ai: aiId, model: config.model, provider: config.provider, prediction: parsed, created_at: new Date().toISOString() };
+      const record = { ai: aiId, model: config.model, prediction: parsed, created_at: new Date().toISOString() };
       results[aiId] = record;
 
       const oldIdx = predictions.championship.findIndex(p => p.ai === aiId);
@@ -756,6 +528,32 @@ app.get('/api/predictions-champion', (req, res) => {
   res.json({ championship: predictions.championship });
 });
 
+// --- 热力图数据 ---
+app.get('/api/heatmap', (req, res) => {
+  const matches = initMatchesData().matches.filter(m => m.stage === '小组赛');
+  const predictions = readJSON(PREDICTIONS_FILE, { championship: [], matches: [] });
+  const ais = Object.keys(AI_CONFIG);
+
+  const data = matches.map(match => {
+    const preds = {};
+    ais.forEach(aiId => {
+      const p = predictions.matches.find(pr => pr.match_id === match.id && pr.ai === aiId);
+      preds[aiId] = p ? { correct: p.correct, score_correct: p.score_correct } : null;
+    });
+    return {
+      id: match.id,
+      group: match.group,
+      home: match.home,
+      away: match.away,
+      home_score: match.home_score,
+      away_score: match.away_score,
+      predictions: preds,
+    };
+  });
+
+  res.json({ ais, matches: data });
+});
+
 // --- 排行榜 ---
 
 app.get('/api/leaderboard', (req, res) => {
@@ -774,6 +572,8 @@ app.get('/api/leaderboard', (req, res) => {
       total_predictions: 0,
       correct_winner: 0,
       correct_score: 0,
+      total_deviation: 0,
+      deviation_count: 0,
       // 分阶段统计
       group_stage: { total: 0, correct: 0 },
       knockout: { total: 0, correct: 0 },
@@ -797,6 +597,15 @@ app.get('/api/leaderboard', (req, res) => {
         const stageKey = match.stage.includes('小组赛') ? 'group_stage' : 'knockout';
         stat[stageKey].total++;
         if (p.correct) stat[stageKey].correct++;
+
+        // 偏差计算: |预测-实际|
+        if (match.home_score !== null && match.away_score !== null && p.prediction && p.prediction.predictions && p.prediction.predictions[0]) {
+          const [ph, pa] = (p.prediction.predictions[0].score || '0-0').split('-').map(Number);
+          if (!isNaN(ph) && !isNaN(pa)) {
+            stat.total_deviation += Math.abs(ph - match.home_score) + Math.abs(pa - match.away_score);
+            stat.deviation_count++;
+          }
+        }
       }
     }
   });
@@ -804,9 +613,11 @@ app.get('/api/leaderboard', (req, res) => {
   // 计算冷门捕捉
   predictions.matches.forEach(p => {
     if (!p.correct || !leaderboard[p.ai]) return;
+    // 检查这场比赛是否多数AI预测错误
     const matchPreds = predictions.matches.filter(mp => mp.match_id === p.match_id);
     const totalForMatch = matchPreds.length;
     const correctCount = matchPreds.filter(mp => mp.correct).length;
+    // 如果该AI正确但多数错误（正确率<50%），算冷门
     if (totalForMatch >= 3 && correctCount <= totalForMatch / 2) {
       leaderboard[p.ai].upset_catches++;
     }
@@ -825,6 +636,7 @@ app.get('/api/leaderboard', (req, res) => {
       rank: i + 1,
       winner_rate: l.total_predictions > 0 ? (l.correct_winner / l.total_predictions * 100).toFixed(1) : '0.0',
       score_rate: l.total_predictions > 0 ? (l.correct_score / l.total_predictions * 100).toFixed(1) : '0.0',
+      avg_deviation: l.deviation_count > 0 ? (l.total_deviation / l.deviation_count).toFixed(2) : '-',
     }));
 
   res.json({
@@ -868,76 +680,26 @@ async function autoChampionPredict() {
     console.log('👑 冠军预测已存在，跳过自动预测');
     return;
   }
-
-  const available = getAvailableAIs();
-  if (available.length === 0) {
-    console.log('⚠️  未配置任何 API Key，跳过自动冠军预测');
-    console.log('   请在 .env 中配置至少一个 AI 的 API Key');
+  if (!deepseekClient) {
+    console.log('⚠️  未配置 API Key，跳过自动冠军预测');
     return;
   }
-
-  console.log(`\n👑 首次启动，自动预测冠军 (${available.length}/5 个AI可用)...\n`);
+  console.log('\n👑 首次启动，自动预测冠军...\n');
   const prompt = buildChampionPrompt();
   const results = {};
 
-  for (const aiId of available) {
-    const config = AI_CONFIG[aiId];
+  for (const [aiId, config] of Object.entries(AI_CONFIG)) {
     console.log(`   ⏳ 调用 ${config.name}...`);
     try {
-      let text;
-      switch (config.provider) {
-        case 'anthropic': {
-          const resp = await anthropicClient.messages.create({
-            model: config.model, max_tokens: 1000, temperature: config.temp,
-            system: '你是一位资深足球分析师。请严格按照JSON格式输出冠军预测结果。',
-            messages: [{ role: 'user', content: prompt + `\n你的分析风格：${config.style}` }],
-          });
-          text = resp.content[0].text;
-          break;
-        }
-        case 'openai': {
-          const resp = await openaiClient.chat.completions.create({
-            model: config.model,
-            messages: [{ role: 'user', content: prompt + `\n你的分析风格：${config.style}` }],
-            temperature: config.temp, max_tokens: 1000,
-          });
-          text = resp.choices[0].message.content;
-          break;
-        }
-        case 'google': {
-          const { GoogleGenerativeAI } = require('@google/generative-ai');
-          const genAI = new GoogleGenerativeAI(geminiClient);
-          const model = genAI.getGenerativeModel({ model: config.model });
-          const result = await model.generateContent({
-            contents: [{ role: 'user', parts: [{ text: prompt + `\n你的分析风格：${config.style}` }] }],
-            generationConfig: { temperature: config.temp, maxOutputTokens: 1000 },
-          });
-          text = result.response.text();
-          break;
-        }
-        case 'deepseek': {
-          const resp = await deepseekClient.chat.completions.create({
-            model: config.model,
-            messages: [{ role: 'user', content: prompt + `\n你的分析风格：${config.style}` }],
-            temperature: config.temp, max_tokens: 1000,
-          });
-          text = resp.choices[0].message.content;
-          break;
-        }
-        case 'doubao': {
-          const resp = await doubaoClient.chat.completions.create({
-            model: config.model,
-            messages: [{ role: 'user', content: prompt + `\n你的分析风格：${config.style}` }],
-            temperature: config.temp, max_tokens: 1000,
-          });
-          text = resp.choices[0].message.content;
-          break;
-        }
-        default: continue;
-      }
-      const parsed = parseChampionResponse(text, aiId);
+      const resp = await deepseekClient.chat.completions.create({
+        model: config.model,
+        messages: [{ role: 'user', content: prompt + `\n你的分析风格：${config.style}` }],
+        temperature: config.temp,
+        max_tokens: 1000,
+      });
+      const parsed = parseChampionResponse(resp.choices[0].message.content, aiId);
       console.log(`   ✅ ${config.name}: 🏆${parsed.champion || '?'}`);
-      results[aiId] = { ai: aiId, model: config.model, provider: config.provider, prediction: parsed, created_at: new Date().toISOString() };
+      results[aiId] = { ai: aiId, model: config.model, prediction: parsed, created_at: new Date().toISOString() };
     } catch (e) {
       console.log(`   ❌ ${config.name}: ${e.message}`);
     }
@@ -946,7 +708,7 @@ async function autoChampionPredict() {
   if (Object.keys(results).length > 0) {
     predictions.championship = Object.values(results);
     writeJSON(PREDICTIONS_FILE, predictions);
-    console.log(`\n👑 冠军预测完成! ${Object.keys(results).length}/${available.length} 成功\n`);
+    console.log(`\n👑 冠军预测完成! ${Object.keys(results).length}/5 成功\n`);
   }
 }
 
@@ -959,21 +721,16 @@ app.get('/', (req, res) => {
 app.get('/api/status', (req, res) => {
   const status = {};
   Object.entries(AI_CONFIG).forEach(([id, config]) => {
-    const available = isAIAvailable(id);
     status[id] = {
       name: config.name,
       model: config.model,
-      provider: config.provider,
       color: config.color,
       emoji: config.emoji,
-      available,
-      key_env: `${config.provider.toUpperCase()}_API_KEY`,
+      available: !!deepseekClient,
     };
   });
   res.json({
     status,
-    available_count: Object.values(status).filter(s => s.available).length,
-    total_count: Object.keys(status).length,
     match_count: initMatchesData().matches.length,
     server_time: new Date().toISOString(),
     worldcup_start: '2026-06-11',
@@ -981,15 +738,65 @@ app.get('/api/status', (req, res) => {
   });
 });
 
+// --- 记账功能 ---
+
+// 获取所有投注
+app.get('/api/bets', (req, res) => {
+  const bets = readJSON(BETS_FILE, []);
+  const matches = initMatchesData().matches;
+  // 关联比赛信息
+  const enriched = bets.map(b => {
+    const match = matches.find(m => m.id === b.match_id);
+    return { ...b, match: match || null };
+  });
+  res.json({ bets: enriched });
+});
+
+// 添加投注
+app.post('/api/bets', (req, res) => {
+  const { match_id, amount, odds, note } = req.body;
+  if (!match_id || !amount) return res.status(400).json({ error: '缺少 match_id 或 amount' });
+  const bets = readJSON(BETS_FILE, []);
+  const bet = {
+    id: 'bet-' + Date.now(),
+    match_id, amount: parseFloat(amount),
+    odds: parseFloat(odds) || 0,
+    note: note || '',
+    win_amount: null,
+    created_at: new Date().toISOString(),
+  };
+  bets.push(bet);
+  writeJSON(BETS_FILE, bets);
+  res.json({ success: true, bet });
+});
+
+// 手动设置中奖金额
+app.post('/api/bets/:id/win', (req, res) => {
+  const bets = readJSON(BETS_FILE, []);
+  const bet = bets.find(b => b.id === req.params.id);
+  if (!bet) return res.status(404).json({ error: '投注不存在' });
+  bet.win_amount = parseFloat(req.body.win_amount) || 0;
+  writeJSON(BETS_FILE, bets);
+  res.json({ success: true, bet });
+});
+
+// 删除投注
+app.delete('/api/bets/:id', (req, res) => {
+  let bets = readJSON(BETS_FILE, []);
+  const before = bets.length;
+  bets = bets.filter(b => b.id !== req.params.id);
+  if (bets.length === before) return res.status(404).json({ error: '投注不存在' });
+  writeJSON(BETS_FILE, bets);
+  res.json({ success: true });
+});
+
 app.listen(PORT, async () => {
   console.log('========================================');
   console.log('  🏆 2026世界杯 AI预言家对决');
-  console.log('  Claude (Anthropic) vs GPT (OpenAI) vs Gemini (Google)');
-  console.log('  vs DeepSeek vs 豆包 (ByteDance)');
+  console.log('  Claude vs GPT vs Gemini vs DeepSeek vs 豆包');
   console.log('========================================');
   console.log(`  🌐 http://localhost:${PORT}`);
   console.log(`  📅 距开幕还有 ${Math.ceil((new Date('2026-06-11') - new Date()) / (1000 * 60 * 60 * 24))} 天`);
-  console.log(`  🤖 可用 AI: ${getAvailableAIs().length}/${Object.keys(AI_CONFIG).length}`);
   console.log('========================================');
 
   // 启动时自动预测冠军
