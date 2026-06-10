@@ -12,8 +12,40 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// 限流保护
+const rateLimit = require('express-rate-limit');
+const predictLimiter = rateLimit({ windowMs: 60*1000, max: 10, message: { error: '请求太频繁，请稍后再试' } });
+const apiLimiter = rateLimit({ windowMs: 60*1000, max: 60 });
+
 app.use(cors());
 app.use(express.json());
+// ==================== 密码保护 ====================
+const AUTH_PASSWORD = process.env.LOGIN_PASSWORD || 'wc2026';
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
+app.use('/api/predict', predictLimiter);
+
+// 登录页
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+// 密码验证
+app.post('/login', (req, res) => {
+  if (req.body.password === AUTH_PASSWORD) {
+    res.cookie('auth', AUTH_PASSWORD, { maxAge: 30*24*60*60*1000, httpOnly: true });
+    return res.json({ success: true });
+  }
+  res.status(401).json({ success: false, error: '密码错误' });
+});
+
+// 鉴权中间件
+app.use((req, res, next) => {
+  if (req.path === '/login' || req.path.startsWith('/api/')) return next();
+  if (req.cookies && req.cookies.auth === AUTH_PASSWORD) return next();
+  res.redirect('/login');
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ==================== 数据文件路径 ====================
