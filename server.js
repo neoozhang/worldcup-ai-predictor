@@ -19,7 +19,6 @@ const apiLimiter = rateLimit({ windowMs: 60*1000, max: 60 });
 
 app.use(cors());
 app.use(express.json());
-// ==================== 密码保护 ====================
 const AUTH_PASSWORD = process.env.LOGIN_PASSWORD || 'wc2026';
 const cookieParser = require('cookie-parser');
 app.use(cookieParser());
@@ -30,19 +29,29 @@ app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-// 密码验证
+// 激活码验证
 app.post('/login', (req, res) => {
-  if (req.body.password === AUTH_PASSWORD) {
-    res.cookie('auth', AUTH_PASSWORD, { maxAge: 30*24*60*60*1000, httpOnly: true });
+  const code = req.body.password;
+  const result = checkCode(code);
+  if (result.valid) {
+    res.cookie('auth', code, { maxAge: 30*24*60*60*1000, httpOnly: true });
     return res.json({ success: true });
   }
-  res.status(401).json({ success: false, error: '密码错误' });
+  if (result.used) return res.status(401).json({ success: false, error: '激活码已被使用' });
+  res.status(401).json({ success: false, error: '激活码无效' });
 });
 
 // 鉴权中间件
 app.use((req, res, next) => {
   if (req.path === '/login' || req.path.startsWith('/api/')) return next();
-  if (req.cookies && req.cookies.auth === AUTH_PASSWORD) return next();
+  const auth = req.cookies && req.cookies.auth;
+  if (!auth) return res.redirect('/login');
+  // 管理员密码永不过期
+  if (auth === AUTH_PASSWORD) return next();
+  // 检查是否有效激活码
+  const codes = JSON.parse(fs.readFileSync(CODES_FILE, 'utf-8'));
+  const found = codes.find(c => c.code === auth);
+  if (found) return next();
   res.redirect('/login');
 });
 
@@ -53,6 +62,7 @@ const DATA_DIR = path.join(__dirname, 'data');
 const MATCHES_FILE = path.join(DATA_DIR, 'matches.json');
 const PREDICTIONS_FILE = path.join(DATA_DIR, 'predictions.json');
 const BETS_FILE = path.join(DATA_DIR, 'bets.json');
+const CODES_FILE = path.join(DATA_DIR, 'codes.json');
 
 // 确保 data 目录存在
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -70,6 +80,31 @@ function readJSON(filepath, fallback = {}) {
 
 function writeJSON(filepath, data) {
   fs.writeFileSync(filepath, JSON.stringify(data, null, 2), 'utf-8');
+}
+
+// ==================== 激活码管理 ====================
+function initCodes() {
+  if (!fs.existsSync(CODES_FILE)) {
+    const codes = [];
+    for (let i = 0; i < 50; i++) {
+      codes.push({ code: 'WC' + Math.random().toString(36).substring(2, 8).toUpperCase(), used: false, usedAt: null });
+    }
+    codes.push({ code: 'wc2026', used: false, usedAt: null });
+    fs.writeFileSync(CODES_FILE, JSON.stringify(codes, null, 2));
+  }
+}
+initCodes();
+
+function checkCode(code) {
+  if (code === AUTH_PASSWORD) return { valid: true, admin: true };
+  const codes = JSON.parse(fs.readFileSync(CODES_FILE, 'utf-8'));
+  const found = codes.find(c => c.code === code);
+  if (!found) return { valid: false };
+  if (found.used) return { valid: false, used: true };
+  found.used = true;
+  found.usedAt = new Date().toISOString();
+  fs.writeFileSync(CODES_FILE, JSON.stringify(codes, null, 2));
+  return { valid: true };
 }
 
 // ==================== DeepSeek 客户端（全部AI统一走DeepSeek API） ====================
@@ -768,6 +803,21 @@ app.get('/api/status', (req, res) => {
     worldcup_start: '2026-06-11',
     days_until_opening: Math.ceil((new Date('2026-06-11') - new Date()) / (1000 * 60 * 60 * 24)),
   });
+});
+
+// --- 激活码管理 ---
+app.post('/api/gen-codes', (req, res) => {
+  const { count = 10, adminKey } = req.body;
+  if (adminKey !== AUTH_PASSWORD) return res.status(403).json({ error: '无权限' });
+  const codes = JSON.parse(fs.readFileSync(CODES_FILE, 'utf-8'));
+  const newCodes = [];
+  for (let i = 0; i < count; i++) {
+    const c = { code: 'WC' + Math.random().toString(36).substring(2, 8).toUpperCase(), used: false, usedAt: null };
+    codes.push(c);
+    newCodes.push(c.code);
+  }
+  fs.writeFileSync(CODES_FILE, JSON.stringify(codes, null, 2));
+  res.json({ success: true, codes: newCodes, total: codes.length, used: codes.filter(c => c.used).length });
 });
 
 // --- 记账功能 ---
