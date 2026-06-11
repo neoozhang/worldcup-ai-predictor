@@ -450,6 +450,7 @@ header .subtitle { color: var(--text-dim); font-size: 0.95rem; letter-spacing: 1
 <header>
   <h1>🏆 2026世界杯 · AI预言家对决</h1>
   <div class="subtitle">Claude 🆚 GPT 🆚 Gemini 🆚 DeepSeek 🆚 豆包 — 谁才是真·预言帝？</div>
+  <div style="color:#f59e0b;font-size:0.75rem;margin-top:8px;background:rgba(245,158,11,0.08);display:inline-block;padding:3px 14px;border-radius:10px;">⚠️ AI预测仅供娱乐参考，不构成投注建议</div>
   <div class="countdown-bar" id="countdown">
     <div class="countdown-item"><div class="countdown-num" id="cd-days">-</div><div class="countdown-label">天</div></div>
     <div class="countdown-item"><div class="countdown-num" id="cd-hours">-</div><div class="countdown-label">时</div></div>
@@ -621,7 +622,7 @@ function initParticles() {
 
 // ==================== 倒计时 ====================
 function updateCountdown() {
-  const target = new Date('2026-06-11T14:00:00-06:00'); // 墨西哥城时间
+  const target = new Date('2026-06-11T13:00:00-06:00'); // 墨西哥城时间
   const now = new Date();
   const diff = target - now;
   if (diff <= 0) {
