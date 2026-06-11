@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <title>🏆 2026世界杯 AI预言家对决</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
@@ -122,10 +122,10 @@ body {
 /* ========== 头部 ========== */
 header {
   position: relative; z-index: 1;
-  text-align: center; padding: 30px 20px 20px;
+  text-align: center; padding: 20px 20px 8px;
 }
 header h1 {
-  font-size: clamp(1.6rem, 4vw, 2.8rem);
+  font-size: clamp(1.5rem, 4vw, 2.4rem);
   background: var(--header-gradient);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -146,8 +146,8 @@ header .subtitle { color: var(--text-dim); font-size: 0.95rem; letter-spacing: 1
 .theme-toggle:hover { transform: scale(1.1); border-color: var(--gold); }
 
 .countdown-bar {
-  display: flex; justify-content: center; gap: 16px;
-  margin: 16px auto; flex-wrap: wrap;
+  display: flex; justify-content: center; gap: 12px;
+  margin: 8px auto; flex-wrap: wrap;
 }
 .countdown-item {
   background: var(--bg-card); backdrop-filter: blur(10px);
@@ -166,8 +166,8 @@ header .subtitle { color: var(--text-dim); font-size: 0.95rem; letter-spacing: 1
 /* ========== 冠军预测栏 ========== */
 .champion-strip {
   position: relative; z-index: 1;
-  display: flex; justify-content: center; gap: 12px;
-  flex-wrap: wrap; padding: 8px 20px; margin: 0 auto 10px;
+  display: flex; justify-content: center; gap: 10px;
+  flex-wrap: wrap; padding: 4px 16px; margin: -8px auto 6px;
   max-width: 1100px;
 }
 .champion-card {
@@ -416,6 +416,7 @@ header .subtitle { color: var(--text-dim); font-size: 0.95rem; letter-spacing: 1
 
 /* ========== 响应式 ========== */
 @media (max-width: 640px) {
+  input, select, textarea { font-size: 16px !important; }
   .match-card { padding: 8px 10px; gap: 4px; }
   .match-card .team .name { font-size: 0.72rem; max-width: 60px; }
   .match-card .team .flag { font-size: 1rem; }
@@ -451,6 +452,7 @@ header .subtitle { color: var(--text-dim); font-size: 0.95rem; letter-spacing: 1
   <h1>🏆 2026世界杯 · AI预言家对决</h1>
   <div class="subtitle">Claude 🆚 GPT 🆚 Gemini 🆚 DeepSeek 🆚 豆包 — 谁才是真·预言帝？</div>
   <div style="color:#f59e0b;font-size:0.75rem;margin-top:8px;background:rgba(245,158,11,0.08);display:inline-block;padding:3px 14px;border-radius:10px;">⚠️ AI预测仅供娱乐参考，不构成投注建议</div>
+  <div style="color:var(--text-dim);font-size:0.75rem;margin-bottom:4px;" id="cd-label">⏳ 加载中...</div>
   <div class="countdown-bar" id="countdown">
     <div class="countdown-item"><div class="countdown-num" id="cd-days">-</div><div class="countdown-label">天</div></div>
     <div class="countdown-item"><div class="countdown-num" id="cd-hours">-</div><div class="countdown-label">时</div></div>
@@ -533,12 +535,10 @@ header .subtitle { color: var(--text-dim); font-size: 0.95rem; letter-spacing: 1
     <div style="max-width:600px;margin:0 auto;">
       <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;">
         <div style="display:flex;flex-direction:column;gap:6px;">
-          <select id="bet-match" style="padding:8px;border-radius:8px;background:var(--bg-mid);color:var(--text);border:1px solid var(--border);font-size:0.85rem;"></select>
-          <div style="display:flex;gap:8px;">
-            <input id="bet-amount" type="number" placeholder="金额" style="flex:1;padding:8px;border-radius:8px;background:var(--bg-mid);color:var(--text);border:1px solid var(--border);font-size:0.85rem;">
-            <input id="bet-note" type="text" placeholder="备注" style="flex:1;padding:8px;border-radius:8px;background:var(--bg-mid);color:var(--text);border:1px solid var(--border);font-size:0.85rem;">
-          </div>
-          <button onclick="addBet()" style="padding:8px;border-radius:8px;background:var(--btn-gradient);color:var(--btn-text);border:none;font-weight:700;cursor:pointer;font-size:0.85rem;">+ 添加</button>
+          <select id="bet-match" style="padding:10px;border-radius:8px;background:var(--bg-mid);color:var(--text);border:1px solid var(--border);font-size:0.85rem;"></select>
+          <input id="bet-custom" type="text" placeholder="或手写比赛" style="padding:10px;border-radius:8px;background:var(--bg-mid);color:var(--text);border:1px solid var(--border);font-size:0.85rem;">
+          <input id="bet-stake" type="number" placeholder="金额" style="padding:10px;border-radius:8px;background:var(--bg-mid);color:var(--text);border:1px solid var(--border);font-size:0.85rem;">
+          <button onclick="addBet()" style="padding:10px;border-radius:8px;background:var(--btn-gradient);color:var(--btn-text);border:none;font-weight:700;cursor:pointer;font-size:0.85rem;">+ 添加</button>
         </div>
       </div>
 
@@ -622,24 +622,44 @@ function initParticles() {
 
 // ==================== 倒计时 ====================
 function updateCountdown() {
-  const target = new Date('2026-06-11T13:00:00-06:00'); // 墨西哥城时间
-  const now = new Date();
-  const diff = target - now;
-  if (diff <= 0) {
-    document.getElementById('cd-days').textContent = '0';
-    document.getElementById('cd-hours').textContent = '0';
-    document.getElementById('cd-mins').textContent = '0';
-    document.getElementById('cd-secs').textContent = '0';
+  // 找下一场未开始的比赛
+  const upcoming = allMatches
+    .filter(m => m.status === 'upcoming' && m.date && m.time)
+    .sort((a,b) => (a.date+'T'+a.time).localeCompare(b.date+'T'+b.time));
+
+  const label = document.getElementById('cd-label');
+  const daysEl = document.getElementById('cd-days');
+  const hoursEl = document.getElementById('cd-hours');
+  const minsEl = document.getElementById('cd-mins');
+  const secsEl = document.getElementById('cd-secs');
+
+  if (!upcoming.length) {
+    if (label) label.textContent = '🏆 所有比赛已结束';
+    [daysEl,hoursEl,minsEl,secsEl].forEach(el => { if(el) el.textContent = '-'; });
     return;
   }
+
+  const next = upcoming[0];
+  const target = new Date(next.date + 'T' + next.time);
+  const now = new Date();
+  const diff = target - now;
+
+  if (diff <= 0) {
+    daysEl.textContent = '0'; hoursEl.textContent = '0';
+    minsEl.textContent = '0'; secsEl.textContent = '0';
+    return;
+  }
+
   const d = Math.floor(diff / (1000 * 60 * 60 * 24));
   const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
   const s = Math.floor((diff % (1000 * 60)) / 1000);
-  document.getElementById('cd-days').textContent = d;
-  document.getElementById('cd-hours').textContent = String(h).padStart(2,'0');
-  document.getElementById('cd-mins').textContent = String(m).padStart(2,'0');
-  document.getElementById('cd-secs').textContent = String(s).padStart(2,'0');
+  daysEl.textContent = d;
+  hoursEl.textContent = String(h).padStart(2,'0');
+  minsEl.textContent = String(m).padStart(2,'0');
+  secsEl.textContent = String(s).padStart(2,'0');
+
+  if (label) label.textContent = `⏳ ${next.home} vs ${next.away}`;
 }
 
 // ==================== 数据加载 ====================
@@ -658,7 +678,7 @@ function populateMatchSelect() {
   const sel = document.getElementById('predict-match-select');
   if (!sel) return;
   sel.innerHTML = '<option value="">-- 选择比赛 --</option>';
-  allMatches.forEach(m => {
+  [...allMatches].sort((a,b) => (a.date+' '+a.time).localeCompare(b.date+' '+b.time)).forEach(m => {
     const opt = document.createElement('option');
     opt.value = m.id;
     opt.textContent = `${m.home} vs ${m.away} (${m.date} ${m.time || ''})`;
@@ -679,7 +699,7 @@ function renderMatches() {
   const statusFilter = document.getElementById('filter-status')?.value || '';
   const groupFilter = document.getElementById('filter-group')?.value || '';
 
-  let filtered = [...allMatches];
+  let filtered = [...allMatches].sort((a,b) => (a.date+' '+a.time).localeCompare(b.date+' '+b.time));
   if (stageFilter) filtered = filtered.filter(m => m.stage === stageFilter);
   if (statusFilter) filtered = filtered.filter(m => m.status === statusFilter);
   if (groupFilter) filtered = filtered.filter(m => m.group === groupFilter);
@@ -927,8 +947,8 @@ function displayPredictions(results, match) {
 
 function getDimLabel(key) {
   const labels = {
-    tactics: '战术博弈', key_matchup: '关键对位', physical: '体能储备',
-    mental: '心理层面', weather: '天气影响', referee: '裁判因素', x_factor: 'X因素'
+    strength: '绝对实力', tactics: '战术指标', chemistry: '化学反应',
+    market: '市场热度', environment: '外部环境'
   };
   return labels[key] || key;
 }
@@ -1032,7 +1052,7 @@ function renderCharts(data) {
   const radarCtx = document.getElementById('radar-chart')?.getContext('2d');
   if (radarCtx && data.rankings.length) {
     if (charts.radar) charts.radar.destroy();
-    const labels = ['胜负准确率', '比分命中率', '冷门捕捉', '小组赛表现', '淘汰赛表现'];
+    const labels = ['绝对实力', '战术指标', '化学反应', '市场热度', '外部环境'];
     const maxUpset = Math.max(...data.rankings.map(r => r.upset_catches), 1);
     charts.radar = new Chart(radarCtx, {
       type: 'radar',
@@ -1226,7 +1246,7 @@ async function loadBets() {
   const bets = resp.bets || [];
 
   let totalBet = 0, totalWin = 0;
-  bets.forEach(b => { totalBet += b.amount; if (b.win_amount) totalWin += b.win_amount; });
+  bets.forEach(b => { totalBet += (b.stake||b.amount||0); if (b.return) totalWin += b.return; });
 
   document.getElementById('total-bet').textContent = totalBet;
   document.getElementById('total-win').textContent = totalWin;
@@ -1243,39 +1263,43 @@ async function loadBets() {
 
   list.innerHTML = bets.reverse().map(b => {
     const m = b.match;
-    const info = m ? `${m.home} vs ${m.away} (${m.date})` : b.match_id;
-    const status = b.win_amount !== null
-      ? `<span style="color:var(--green);">+${b.win_amount}</span>`
-      : `<span style="color:var(--text-dim);">待开奖</span>`;
+    let info;
+    if (m) {
+      info = `${getFlag(m.home)} ${m.home} vs ${getFlag(m.away)} ${m.away} (${m.date.slice(5)})`;
+    } else {
+      info = b.match_id; // 自填的比赛名直接显示
+    }
+    const result = b.return > 0
+      ? `<span style="color:var(--green);font-weight:700;">+${b.return}</span>`
+      : b.return === 0 ? `<span style="color:var(--red);">未中</span>`
+      : `<span style="color:var(--text-dim);">待开</span>`;
     return `
-    <div style="display:flex;align-items:center;gap:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;box-shadow:var(--shadow-sm);">
+    <div style="display:flex;align-items:center;gap:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:8px 10px;box-shadow:var(--shadow-sm);">
       <div style="flex:1;min-width:0;">
-        <div style="font-size:0.8rem;font-weight:600;">${info}</div>
-        <div style="font-size:0.7rem;color:var(--text-dim);">${b.amount} ${b.note ? '| '+b.note : ''}</div>
+        <div style="font-size:0.78rem;font-weight:600;">${info}</div>
+        <div style="font-size:0.7rem;color:var(--text-dim);">${b.stake||b.amount}</div>
       </div>
-      <div style="font-weight:700;font-size:0.9rem;flex-shrink:0;">${status}</div>
-      ${b.win_amount === null ? `<button onclick="setWin('${b.id}')" style="padding:3px 8px;border-radius:6px;background:var(--green);color:#fff;border:none;font-size:0.7rem;cursor:pointer;">开奖</button>` : ''}
+      <div style="font-size:0.85rem;flex-shrink:0;">${result}</div>
       <button onclick="deleteBet('${b.id}')" style="padding:3px 6px;border-radius:6px;background:var(--red);color:#fff;border:none;font-size:0.7rem;cursor:pointer;">✕</button>
+      ${b.return === null || b.return === undefined ? `<button onclick="setWin('${b.id}')" style="padding:3px 8px;border-radius:6px;background:var(--green);color:#fff;border:none;font-size:0.7rem;cursor:pointer;">开</button>` : ''}
     </div>`;
   }).join('');
 }
 
 async function addBet() {
-  const match_id = document.getElementById('bet-match').value;
-  const amount = document.getElementById('bet-amount').value;
-  if (!match_id || !amount) { toast('请选择比赛并填写金额', 'error'); return; }
-
-  const note = document.getElementById('bet-note').value;
+  const custom = document.getElementById('bet-custom').value.trim();
+  const match_id = custom || document.getElementById('bet-match').value;
+  const stake = parseFloat(document.getElementById('bet-stake').value);
+  if (!match_id || !stake) { toast('请选择或填写比赛', 'error'); return; }
   const resp = await api('/api/bets', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ match_id, amount: parseFloat(amount), odds: 0, note })
+    body: JSON.stringify({ match_id, stake })
   });
   if (resp && resp.success) {
-    document.getElementById('bet-amount').value = '';
-    document.getElementById('bet-odds').value = '';
-    document.getElementById('bet-note').value = '';
+    document.getElementById('bet-stake').value = '';
+    document.getElementById('bet-custom').value = '';
     loadBets();
-    toast('投注已记录 ✅');
+    toast('已记录 ✅');
   } else { toast('添加失败', 'error'); }
 }
 

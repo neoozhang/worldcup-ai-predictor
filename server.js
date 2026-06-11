@@ -155,16 +155,14 @@ function buildPredictionPrompt(match, aiStyle) {
 - ${match.home}：请根据你掌握的最新数据评估实力和近期状态
 - ${match.away}：请根据你掌握的最新数据评估实力和近期状态
 
-## 关键分析维度
-请从以下维度逐一分析（每点20-40字）：
+## 五维赛事量化评估模型
+请从以下五个维度逐一分析（每点20-40字），并给出每个维度的量化得分（满分10分）：
 
-1. **战术博弈**：双方阵型和战术风格的克制关系
-2. **关键对位**：决定比赛走向的核心球员对决
-3. **体能储备**：赛程密度、体能分配和替补深度
-4. **心理层面**：大赛经验、抗压能力和更衣室氛围
-5. **天气影响**：天气条件对技战术发挥的影响
-6. **裁判因素**：如有裁判信息请分析执法风格影响
-7. **X因素**：可能出现的意外变量（红牌、点球、伤病等）
+1. **绝对实力面**（权重30%）：评估球队硬实力——ELO排名、FIFA排名、球星个人能力。谁的整体纸面实力更强？得分：__/10
+2. **战术高阶指标**（权重20%）：评估进攻效率（xG/射门转化率）、防守压迫（PPDA）、门将表现。谁的运转效率更高？得分：__/10
+3. **阵型化学反应**（权重15%）：评估防线默契、俱乐部羁绊、教练-球队磨合度。谁更像一个整体？得分：__/10
+4. **市场与热度智慧**（权重20%）：评估大众热度、历史交锋、投注市场资金流向。市场是否过热？得分：__/10
+5. **外部物理与环境**（权重15%）：评估体能储备、旅行疲劳、裁判判罚风格、伤停影响、天气条件。场外因素对谁更有利？得分：__/10
 
 ## 最终预测
 请给出3个可能的比分剧本（信心度总和为1.0），严格按以下JSON格式输出：
@@ -172,13 +170,11 @@ function buildPredictionPrompt(match, aiStyle) {
 \`\`\`json
 {
   "dimensions": {
-    "tactics": "战术分析（20-40字）",
-    "key_matchup": "关键对位分析（20-40字）",
-    "physical": "体能分析（20-40字）",
-    "mental": "心理分析（20-40字）",
-    "weather": "天气影响（20-40字）",
-    "referee": "裁判因素（20-40字）",
-    "x_factor": "X因素（20-40字）"
+    "strength": "绝对实力分析（20-40字），得分：X/10",
+    "tactics": "战术高阶指标分析（20-40字），得分：X/10",
+    "chemistry": "阵型化学反应分析（20-40字），得分：X/10",
+    "market": "市场热度分析（20-40字），得分：X/10",
+    "environment": "外部环境影响分析（20-40字），得分：X/10"
   },
   "winner": "主队胜/平局/客队胜",
   "predictions": [
@@ -234,9 +230,27 @@ function parseAIResponse(text, aiId) {
 
     // 标准化 winner 字段
     const w = parsed.winner;
-    if (w.includes('主队') || w.includes('胜')) parsed.winner = '主队胜';
-    else if (w.includes('客队') || w.includes('负')) parsed.winner = '客队胜';
-    else if (w.includes('平')) parsed.winner = '平局';
+    if (w.includes('主队胜')) parsed.winner = '主队胜';
+    else if (w.includes('客队胜') || w.includes('客队负') || w.includes('客队赢')) parsed.winner = '客队胜';
+    else if (w.includes('平局') || w.includes('平')) parsed.winner = '平局';
+
+    // 强制替换信心度为每个AI的固定风格（无视AI原始输出）
+    const confStyles = {
+      claude:  [{c:0.50, d:'保守估计'}, {c:0.30, d:'备选方案'}, {c:0.20, d:'冷门可能'}],
+      gpt:     [{c:0.72, d:'强烈看好'}, {c:0.18, d:'次要可能'}, {c:0.10, d:'黑马剧本'}],
+      gemini:  [{c:0.55, d:'综合判断'}, {c:0.28, d:'第二选择'}, {c:0.17, d:'意外情况'}],
+      deepseek:[{c:0.60, d:'数据支持'}, {c:0.25, d:'次要模型'}, {c:0.15, d:'异常概率'}],
+      doubao:  [{c:0.78, d:'直觉锁定'}, {c:0.14, d:'备选预感'}, {c:0.08, d:'玄学冷门'}],
+    };
+    const style = confStyles[aiId] || confStyles.gemini;
+    if (parsed.predictions && Array.isArray(parsed.predictions)) {
+      parsed.predictions.forEach((p, i) => {
+        if (style[i]) {
+          p.confidence = style[i].c;
+          p.scenario = style[i].d + '：' + (p.scenario || '');
+        }
+      });
+    }
 
     return parsed;
   } catch (e) {
@@ -472,14 +486,22 @@ app.post('/api/predict/:matchId', async (req, res) => {
   const match = data.matches.find(m => m.id === req.params.matchId);
   if (!match) return res.status(404).json({ error: '比赛不存在' });
 
-  const { ai } = req.query; // 可选: 只调用指定的 AI
+  const { ai } = req.query;
   const predictions = readJSON(PREDICTIONS_FILE, { championship: [], matches: [] });
 
-  const aiList = ai ? [ai] : Object.keys(AI_CONFIG);
-  const results = {};
+  // 缓存：检查这场比赛是否已经被5个AI完整预测过
+  const existingPreds = predictions.matches.filter(p => p.match_id === match.id && p.prediction && !p.prediction.error);
+  if (existingPreds.length >= 5) {
+    console.log(`   📦 缓存命中: ${match.home} vs ${match.away}`);
+    const results = {};
+    existingPreds.forEach(p => { results[p.ai] = p; });
+    return res.json({ success: true, match_id: match.id, results, cached: true });
+  }
 
-  console.log(`\n🤖 开始预测: ${match.home} vs ${match.away}`);
-  console.log(`   调用 AI: ${aiList.join(', ')}\n`);
+  // 未缓存：调用所有5个AI，一次性全部预测并保存
+  const aiList = Object.keys(AI_CONFIG);
+  const results = {};
+  console.log(`\n🤖 首次预测: ${match.home} vs ${match.away} (5个AI)`);
 
   // 并行调用所有 AI
   const calls = aiList.map(async (aiId) => {
@@ -544,9 +566,13 @@ app.get('/api/predictions/:matchId', (req, res) => {
 
 // 冠军预测
 app.post('/api/predict-champion', async (req, res) => {
+  // 冠军已锁定，直接返回现有数据
+  const predictions = readJSON(PREDICTIONS_FILE, { championship: [], matches: [] });
+  if (predictions.championship && predictions.championship.length >= 5) {
+    return res.json({ success: true, results: predictions.championship, locked: true });
+  }
   const { ai } = req.query;
   const aiList = ai ? [ai] : Object.keys(AI_CONFIG);
-  const predictions = readJSON(PREDICTIONS_FILE, { championship: [], matches: [] });
   const prompt = buildChampionPrompt();
   const results = {};
 
@@ -743,10 +769,8 @@ initMatchesData();
 // 自动冠军预测（如果还没预测过）
 async function autoChampionPredict() {
   const predictions = readJSON(PREDICTIONS_FILE, { championship: [], matches: [] });
-  if (predictions.championship && predictions.championship.length >= 5) {
-    console.log('👑 冠军预测已存在，跳过自动预测');
-    return;
-  }
+  console.log('👑 冠军预测已锁定，不会自动修改');
+  return;
   if (!deepseekClient) {
     console.log('⚠️  未配置 API Key，跳过自动冠军预测');
     return;
@@ -836,15 +860,15 @@ app.get('/api/bets', (req, res) => {
 
 // 添加投注
 app.post('/api/bets', (req, res) => {
-  const { match_id, amount, odds, note } = req.body;
-  if (!match_id || !amount) return res.status(400).json({ error: '缺少 match_id 或 amount' });
+  const { match_id, stake, amount, note } = req.body;
+  const s = parseFloat(stake || amount);
+  if (!match_id || !s) return res.status(400).json({ error: '缺少 match_id 或 stake' });
   const bets = readJSON(BETS_FILE, []);
   const bet = {
     id: 'bet-' + Date.now(),
-    match_id, amount: parseFloat(amount),
-    odds: parseFloat(odds) || 0,
+    match_id, stake: s,
     note: note || '',
-    win_amount: null,
+    return: null,
     created_at: new Date().toISOString(),
   };
   bets.push(bet);
@@ -852,12 +876,12 @@ app.post('/api/bets', (req, res) => {
   res.json({ success: true, bet });
 });
 
-// 手动设置中奖金额
+// 手动开奖
 app.post('/api/bets/:id/win', (req, res) => {
   const bets = readJSON(BETS_FILE, []);
   const bet = bets.find(b => b.id === req.params.id);
   if (!bet) return res.status(404).json({ error: '投注不存在' });
-  bet.win_amount = parseFloat(req.body.win_amount) || 0;
+  bet.return = parseFloat(req.body.win_amount) || parseFloat(req.body.return) || 0;
   writeJSON(BETS_FILE, bets);
   res.json({ success: true, bet });
 });
